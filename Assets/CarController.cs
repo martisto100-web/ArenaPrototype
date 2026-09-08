@@ -1,8 +1,11 @@
 using UnityEngine;
 
 // ATTACH THIS TO: your vehicle GameObject (same as before - no need to re-add).
-// UPDATED: the car now turns to directly face whichever direction the stick
-// (or WASD) points, instead of steering left/right relative to itself.
+// The car turns to directly face whichever direction the input points, instead
+// of steering left/right relative to itself.
+// Input source, in priority order: an IVehicleInput component on this object
+// (player joystick rig or EnemyDriverAI) -> the assigned movementJoystick ->
+// keyboard WASD. The enemy uses the same code path, so movement stats match.
 [RequireComponent(typeof(Rigidbody))]
 public class CarController : MonoBehaviour
 {
@@ -16,11 +19,13 @@ public class CarController : MonoBehaviour
 
     private Rigidbody rb;
     private float currentSpeed = 0f;
+    private IVehicleInput vehicleInput;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
+        vehicleInput = GetComponent<IVehicleInput>();
     }
 
     void FixedUpdate()
@@ -44,6 +49,10 @@ public class CarController : MonoBehaviour
 
     Vector2 GetMovementInput()
     {
+        if (vehicleInput != null)
+        {
+            return vehicleInput.MoveInput;
+        }
         if (movementJoystick != null)
         {
             return movementJoystick.InputVector;

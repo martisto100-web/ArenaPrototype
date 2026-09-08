@@ -1,21 +1,30 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 // ATTACH THIS TO: anything that should be able to take damage and be destroyed —
-// the target dummy for now, later the player vehicle and enemies too.
+// the target dummy, the player vehicle, enemies.
 public class Health : MonoBehaviour
 {
+    [Header("Health")]
     public float maxHealth = 100f;
-    private float currentHealth;
+
+    [Header("Events")]
+    public UnityEvent onDeath; // hook explosions / score / game-over here later
+
+    public float CurrentHealth { get; private set; }
+    public float HealthFraction => maxHealth > 0f ? Mathf.Clamp01(CurrentHealth / maxHealth) : 0f;
 
     void Awake()
     {
-        currentHealth = maxHealth;
+        CurrentHealth = maxHealth;
     }
 
     public void TakeDamage(float amount)
     {
-        currentHealth -= amount;
-        if (currentHealth <= 0f)
+        if (CurrentHealth <= 0f) return; // already dead, ignore extra hits this frame
+
+        CurrentHealth -= amount;
+        if (CurrentHealth <= 0f)
         {
             Die();
         }
@@ -23,8 +32,9 @@ public class Health : MonoBehaviour
 
     void Die()
     {
-        // Placeholder for now — just removes the object.
+        // Placeholder for now — fire the hook, then remove the object.
         // Later: play an explosion effect, award points, trigger respawn, etc.
+        onDeath?.Invoke();
         Destroy(gameObject);
     }
 }
