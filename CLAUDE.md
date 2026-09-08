@@ -19,17 +19,17 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | `IVehicleInput.cs` | — (interface) | `MoveInput` / `AimInput` (Vector2, twin-stick style). Anything implementing it on a vehicle drives that vehicle. |
 | `CarController.cs` | a vehicle (needs `Rigidbody`) | Turns to face the input direction, accelerates forward. Input priority: `IVehicleInput` component → `movementJoystick` → `Input.GetAxis`. |
 | `Weapon.cs` | a vehicle | Independent "turret" aim; auto-fires past `fireDeadzone`. Input priority: `IVehicleInput` → `aimJoystick` → `Fire1` (straight ahead). Stamps each spawned bullet with this vehicle's `Team`. |
-| `EnemyDriverAI.cs` | `EnemyCar` (with `CarController` + `Weapon` + `Health`) | Implements `IVehicleInput`. Health-driven stances: `>66%` Aggressive (close to `aggressiveRange`), `>33%` Cautious (hold `preferredDistance`, circle), else Desperate (ram). Finds the player by tag `Player`. |
-| `Projectile.cs` | `bullet.prefab` | Flies forward; on `OnTriggerEnter` passes through same-`team` (incl. shooter), else `Health.TakeDamage` + destroy. `team` set by the firing `Weapon`. |
+| `EnemyDriverAI.cs` | `EnemyCar` (with `CarController` + `Weapon` + `Health`) | Implements `IVehicleInput`. Never charges: holds a stand-off distance and circles the player, flipping orbit direction at random intervals, adding Perlin wander, sidestepping incoming player bullets (`OverlapSphere` on the Projectiles layer), and steering around obstacles (3 forward feelers). Stances: `Pressing` (health > `evadeBelowHealth`, orbit `pressDistance`) / `Evasive` (hurt, orbit `evadeDistance`, twitchier). Finds the player by tag `Player`. |
+| `Projectile.cs` | `bullet.prefab` | Flies forward (`speed 40`, `damage 4`); on `OnTriggerEnter` passes through same-`team` (incl. shooter), else `Health.TakeDamage` + destroy. `team` set by the firing `Weapon`. |
 | `Health.cs` | anything damageable | `maxHealth`, `CurrentHealth`, `HealthFraction`, `TakeDamage(amount)`. `Die()` invokes `UnityEvent onDeath` then `Destroy`s. |
-| `TeamMember.cs` | a vehicle root | `enum Team { Player, Enemy }` + one field. No `TeamMember` = neutral (target dummy, props) — hittable by anyone. |
+| `TeamMember.cs` | a vehicle root | `enum Team { Player, Enemy }` + one field. No `TeamMember` = neutral (destructible props) — hittable by anyone. |
 | `CameraFollow.cs` | Main Camera | Smoothed elevated angled-down chase cam; `target` = the player vehicle. |
 | `VirtualJoystick.cs` | a UI Image (bg) with a child handle Image | Touch stick; exposes `InputVector` (-1..1 per axis). Two instances: move + aim. |
 
 - **Scene:** `Assets/Scenes/SampleScene.unity` (the only scene).
   - `PlayerCar` — tag `Player`, layer `Player`; `CarController` + `Weapon` (wired to the two `VirtualJoystick`s) + `Health(100)` + `TeamMember(Player)`; child `FirePoint`.
-  - `EnemyCar` — red material, `Untagged`; same components as PlayerCar but joystick refs cleared and `EnemyDriverAI` added; `Health(100)` + `TeamMember(Enemy)`; child `FirePoint`.
-  - `TargetDummy` — `Health(100)`, no team (neutral).
+  - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same components as PlayerCar but joystick refs cleared and `EnemyDriverAI` added; `Health(100)` + `TeamMember(Enemy)`; child `FirePoint`.
+  - Four `Cube`s — static obstacles (BoxCollider, no team/health).
   - `Plane` is 50×50 world units centred on origin (playable area ≈ x/z ∈ [-25, 25]).
 - `Assets/Materials/` — runtime materials (`EnemyCar.mat`).
 - `Assets/TutorialInfo/` and `Assets/Readme.asset` are leftover URP-template content — safe to ignore or delete.
@@ -50,4 +50,4 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 
 ## Not yet built
 
-Enemy spawning/waves, score, game-over / win state (player `Health.onDeath` is an empty hook), player respawn, audio, VFX (explosions, muzzle flash, hit feedback), menus, line-of-sight / obstacle avoidance for the AI, per-vehicle stat presets.
+Enemy spawning/waves, score, game-over / win state (player `Health.onDeath` is an empty hook), player respawn, audio, VFX (explosions, muzzle flash, hit feedback), menus, line-of-sight checks for the AI (it currently shoots through walls; obstacle *avoidance* exists), per-vehicle stat presets.

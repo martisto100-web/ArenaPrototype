@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 // ATTACH THIS TO: anything that should be able to take damage and be destroyed —
-// the target dummy, the player vehicle, enemies.
+// the player vehicle, enemies, destructible props.
 public class Health : MonoBehaviour
 {
     [Header("Health")]
