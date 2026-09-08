@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // ATTACH THIS TO: the EnemyCar root, alongside CarController + Weapon + Health.
@@ -30,9 +31,11 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
 
     [Header("Bullet dodging")]
     public LayerMask projectileMask = 1 << 6;      // the "Projectiles" layer
-    public float dodgeScanRadius = 18f;
-    public float dodgeCorridor = 3.5f;             // only dodge bullets whose path passes closer than this
-    public float dodgeWeight = 1.4f;
+    public float dodgeScanRadius = 12f;            // how far ahead it can notice a bullet
+    public float dodgeCorridor = 3f;               // only dodge bullets whose path passes closer than this
+    [Range(0f, 1f)] public float dodgeChance = 0.6f; // per bullet: does it even attempt a dodge
+    public float reactionDelay = 0.22f;            // seconds a noticed bullet is ignored before it reacts
+    public float dodgeWeight = 0.9f;
 
     [Header("Obstacle avoidance")]
     public float feelerLength = 5f;
@@ -54,6 +57,13 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
     private int orbitDir = 1;
     private float orbitFlipTimer;
     private float wanderSeed;
+
+    // Per-bullet memory so the dodge has human-like lag: when we first saw a
+    // bullet, and whether we rolled to bother dodging it at all.
+    private struct Threat { public float firstSeen; public bool committed; }
+    private readonly Dictionary<int, Threat> threats = new Dictionary<int, Threat>();
+    private readonly HashSet<int> liveThreats = new HashSet<int>();
+    private readonly List<int> staleThreats = new List<int>();
 
     void Awake()
     {
@@ -135,16 +145,29 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
         AimInput = dist <= attackRange ? new Vector2(dir.x, dir.z) : Vector2.zero;
     }
 
-    // Sum of sideways pushes away from the paths of incoming enemy-of-my-team bullets.
+    // Sum of sideways pushes away from the paths of incoming player bullets.
+    // A bullet is only acted on if we rolled to dodge it (dodgeChance) AND it has
+    // been in view for at least reactionDelay seconds, so plenty of shots land.
     Vector3 ComputeDodge(Vector3 selfPos)
     {
         Collider[] hits = Physics.OverlapSphere(selfPos, dodgeScanRadius, projectileMask, QueryTriggerInteraction.Collide);
         Vector3 push = Vector3.zero;
+        liveThreats.Clear();
 
         foreach (Collider c in hits)
         {
             Projectile p = c.GetComponentInParent<Projectile>();
             if (p == null || p.team == myTeam) continue;
+
+            int id = p.GetInstanceID();
+            liveThreats.Add(id);
+
+            if (!threats.TryGetValue(id, out Threat t))
+            {
+                t = new Threat { firstSeen = Time.time, committed = Random.value < dodgeChance };
+                threats[id] = t;
+            }
+            if (!t.committed || Time.time - t.firstSeen < reactionDelay) continue;
 
             Vector3 bulletPos = c.transform.position;
             Vector3 bulletFwd = c.transform.forward;
@@ -155,7 +178,7 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
             Vector3 toSelf = selfPos - bulletPos;
             toSelf.y = 0f;
             float along = Vector3.Dot(toSelf, bulletFwd);
-            if (along <= 0f || along > dodgeScanRadius) continue; // already past us, or too far to matter
+            if (along <= 0f || along > dodgeScanRadius) continue; // already past us, or too far
 
             Vector3 perp = toSelf - bulletFwd * along; // our offset from the bullet's line
             float perpDist = perp.magnitude;
@@ -163,7 +186,18 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
 
             Vector3 side = perpDist > 0.05f ? perp / perpDist : Vector3.Cross(Vector3.up, bulletFwd);
             float urgency = 1f - along / dodgeScanRadius;
-            push += side * (0.6f + urgency);
+            push += side * (0.5f + urgency);
+        }
+
+        // Forget bullets we can no longer see, so the dictionary stays tiny.
+        if (threats.Count > 0)
+        {
+            staleThreats.Clear();
+            foreach (KeyValuePair<int, Threat> kv in threats)
+            {
+                if (!liveThreats.Contains(kv.Key)) staleThreats.Add(kv.Key);
+            }
+            for (int i = 0; i < staleThreats.Count; i++) threats.Remove(staleThreats[i]);
         }
 
         return push;

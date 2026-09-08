@@ -215,6 +215,8 @@ GameObject:
   - component: {fileID: 90553702}
   - component: {fileID: 90553710}
   - component: {fileID: 90553709}
+  - component: {fileID: 90553712}
+  - component: {fileID: 90553711}
   m_Layer: 3
   m_Name: PlayerCar
   m_TagString: Player
@@ -405,6 +407,42 @@ MonoBehaviour:
   onDeath:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &90553711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90553701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efedc0348f6fd134d84d523df0a0c6ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBar
+  worldOffset: {x: 0, y: 2.4, z: 0}
+  size: {x: 1.8, y: 0.24}
+  border: 0.035
+  backColor: {r: 0, g: 0, b: 0, a: 0.65}
+  fullColor: {r: 0.25, g: 0.85, b: 0.3, a: 1}
+  lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
+--- !u!114 &90553712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90553701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b14f8d2427bf6314aaeeac541cc6968e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInputRouter
+  scheme: 0
+  moveJoystick: {fileID: 0}
+  aimJoystick: {fileID: 0}
+  horizontalAxis: Horizontal
+  verticalAxis: Vertical
+  fireMouseButton: 0
 --- !u!1 &173659821
 GameObject:
   m_ObjectHideFlags: 0
@@ -1489,6 +1527,7 @@ GameObject:
   - component: {fileID: 1461479444}
   - component: {fileID: 1461479443}
   - component: {fileID: 1461479442}
+  - component: {fileID: 1461479452}
   m_Layer: 3
   m_Name: EnemyCar
   m_TagString: Untagged
@@ -1522,9 +1561,11 @@ MonoBehaviour:
   projectileMask:
     serializedVersion: 2
     m_Bits: 64
-  dodgeScanRadius: 18
-  dodgeCorridor: 3.5
-  dodgeWeight: 1.4
+  dodgeScanRadius: 12
+  dodgeCorridor: 3
+  dodgeChance: 0.6
+  reactionDelay: 0.22
+  dodgeWeight: 0.9
   feelerLength: 5
   avoidWeight: 1.6
   attackRange: 24
@@ -1711,6 +1752,24 @@ Transform:
   - {fileID: 1712488922}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1461479452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1461479441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efedc0348f6fd134d84d523df0a0c6ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HealthBar
+  worldOffset: {x: 0, y: 2.4, z: 0}
+  size: {x: 1.8, y: 0.24}
+  border: 0.035
+  backColor: {r: 0, g: 0, b: 0, a: 0.65}
+  fullColor: {r: 0.25, g: 0.85, b: 0.3, a: 1}
+  lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0
