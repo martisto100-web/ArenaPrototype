@@ -7,9 +7,12 @@ using UnityEngine;
 public class HealthBar : MonoBehaviour
 {
     [Header("Placement (world units)")]
-    public Vector3 worldOffset = new Vector3(0f, 2.4f, 0f);
-    public Vector2 size = new Vector2(1.8f, 0.24f);
-    public float border = 0.035f;
+    public Vector3 worldOffset = new Vector3(0f, 2.9f, 0f);
+    public Vector2 size = new Vector2(2.7f, 0.42f);
+    public float border = 0.05f;
+
+    // Set by Respawner to hide the bar while the car is dead / dropping in.
+    public bool Hidden { get; set; }
 
     [Header("Colours")]
     public Color backColor = new Color(0f, 0f, 0f, 0.65f);
@@ -64,6 +67,10 @@ public class HealthBar : MonoBehaviour
     void LateUpdate()
     {
         if (health == null || root == null) return;
+
+        bool show = !Hidden;
+        if (root.gameObject.activeSelf != show) root.gameObject.SetActive(show);
+        if (!show) return;
 
         root.position = transform.position + worldOffset;
         if (cam == null) cam = Camera.main;

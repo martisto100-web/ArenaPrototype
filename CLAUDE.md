@@ -20,19 +20,23 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | `CarController.cs` | a vehicle (needs `Rigidbody`) | Turns to face the input direction, accelerates forward. Input priority: `IVehicleInput` component → `movementJoystick` → `Input.GetAxis`. |
 | `Weapon.cs` | a vehicle | Independent "turret" aim; auto-fires past `fireDeadzone`. Input priority: `IVehicleInput` → `aimJoystick` → `Fire1` (straight ahead). Stamps each spawned bullet with this vehicle's `Team`. |
 | `PlayerInputRouter.cs` | `PlayerCar` (with `CarController` + `Weapon`) | The player's `IVehicleInput`. `Scheme.Auto` → WASD + mouse-aim + hold-LMB-fire on non-mobile, else the two `VirtualJoystick`s (refs auto-pulled from `CarController`/`Weapon` if left empty). Turret only re-aims while LMB is held. |
-| `HealthBar.cs` | a car root with `Health` | Builds a billboarded world-space bar (two unlit quads) above the car **at runtime** — no scene setup, no art. Green→red by `HealthFraction`. Cleans up its bar object in `OnDestroy`. |
+| `HealthBar.cs` | a car root with `Health` | Builds a billboarded world-space bar (two unlit quads) above the car **at runtime** — no scene setup, no art. Green→red by `HealthFraction`. `Hidden` (set by `Respawner`) toggles the bar off while dead. Cleans up its bar object in `OnDestroy`. |
+| `Respawner.cs` | `PlayerCar` / `EnemyCar` (needs `Health` + `Rigidbody`) | Sets `Health.destroyOnDeath = false`. On death: disables controls/AI/collider/renderers, hides the health bar, freezes the body. `Respawn()` (called by `MatchDirector`) revives, places the car `dropHeight` above its start position, and lets gravity drop it in; controls return after `controlReturnDelay`. |
+| `MatchDirector.cs` | `GameDirector` (needs `ScreenFx`) | Subscribes to every `Health.Died` on a car with a `Respawner`. On death → camera `Shake` + `ScreenFx.Flash` + counts `respawnSeconds`→1 on screen ("Respawning in:" / "Enemy respawns in:") then calls `Respawner.Respawn()` + a small landing shake. Player's countdown owns the shared label. |
+| `ScreenFx.cs` | `GameDirector` | Builds a screen-space overlay at runtime: full-screen `Flash()` quad + centred `ShowCountdown(label,n)` label (legacy `Text`, `LegacyRuntime.ttf`). |
 | `EnemyDriverAI.cs` | `EnemyCar` (with `CarController` + `Weapon` + `Health`) | Implements `IVehicleInput`. Never charges: holds a stand-off distance and circles the player, flipping orbit direction at random intervals, adding Perlin wander, sidestepping incoming player bullets, steering around obstacles (3 forward feelers). Dodge is deliberately fallible: per-bullet `dodgeChance` roll + `reactionDelay` before it acts + short `dodgeScanRadius`. Stances: `Pressing` (health > `evadeBelowHealth`, orbit `pressDistance`) / `Evasive` (hurt, orbit `evadeDistance`, twitchier). Finds the player by tag `Player`. |
 | `Projectile.cs` | `bullet.prefab` | Flies forward (`speed 40`, `damage 4`); on `OnTriggerEnter` passes through same-`team` (incl. shooter), else `Health.TakeDamage` + destroy. `team` set by the firing `Weapon`. |
-| `Health.cs` | anything damageable | `maxHealth`, `CurrentHealth`, `HealthFraction`, `TakeDamage(amount)`. `Die()` invokes `UnityEvent onDeath` then `Destroy`s. |
+| `Health.cs` | anything damageable | `maxHealth`, `CurrentHealth`, `HealthFraction`, `IsDead`, `TakeDamage`, `Revive()`. `Died` (C# `event Action<Health>`) + `onDeath` (`UnityEvent`) fire in `Die()`; `Destroy`s only if `destroyOnDeath` (a `Respawner` clears that). |
 | `TeamMember.cs` | a vehicle root | `enum Team { Player, Enemy }` + one field. No `TeamMember` = neutral (destructible props) — hittable by anyone. |
-| `CameraFollow.cs` | Main Camera | Smoothed elevated angled-down chase cam; `target` = the player vehicle. `offset` `(0,24,-16)` — pulled back for a wide tactical view (tune on the component). |
+| `CameraFollow.cs` | Main Camera | Smoothed elevated 3/4 chase cam; `target` = player. `offset` `(9,30,-19)` — up/back/side, pulled out for a wide view. `Shake(duration, magnitude)` for kill/landing juice. |
 | `VirtualJoystick.cs` | a UI Image (bg) with a child handle Image | Touch stick; exposes `InputVector` (-1..1 per axis). Two instances: move + aim. |
 
 - **Scene:** `Assets/Scenes/SampleScene.unity` (the only scene).
-  - `PlayerCar` — tag `Player`, layer `Player`; `CarController` + `Weapon` (still hold the two `VirtualJoystick` refs) + `Health(100)` + `TeamMember(Player)` + `PlayerInputRouter` + `HealthBar`; child `FirePoint`.
-  - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as PlayerCar but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar`; child `FirePoint`.
+  - `PlayerCar` — tag `Player`, layer `Player`; `CarController` + `Weapon` (still hold the two `VirtualJoystick` refs) + `Health(100)` + `TeamMember(Player)` + `PlayerInputRouter` + `HealthBar` + `Respawner`; child `FirePoint`.
+  - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as PlayerCar but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar` + `Respawner`; child `FirePoint`.
+  - `GameDirector` — empty; `MatchDirector` + `ScreenFx` (respawn countdown, screen flash, camera-shake orchestration).
   - Four `Cube`s — static obstacles (BoxCollider, no team/health).
-  - `Plane` is 50×50 world units centred on origin (playable area ≈ x/z ∈ [-25, 25]).
+  - `Plane` is 50×50 world units centred on origin (playable area ≈ x/z ∈ [-25, 25]). Square for now; arenas will become rectangular later.
 - **Physics layers:** both cars are on `Player` (3), bullets on `Projectiles` (6). The Layer Collision Matrix is left fully enabled — `Projectile.cs` filters friendly/self hits by `Team` in code, so don't disable Projectiles↔anything or bullets stop registering.
 - `Assets/Materials/` — runtime materials (`EnemyCar.mat`).
 - `Assets/TutorialInfo/` and `Assets/Readme.asset` are leftover URP-template content — safe to ignore or delete.
@@ -53,4 +57,4 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 
 ## Not yet built
 
-Enemy spawning/waves, score, game-over / win state (player `Health.onDeath` is an empty hook), player respawn, audio, VFX (explosions, muzzle flash, hit feedback), menus, line-of-sight checks for the AI (it currently shoots through walls; obstacle *avoidance* exists), per-vehicle stat presets.
+Enemy spawning/waves, score / match win state, audio, real explosion VFX (only a screen flash + shake so far), muzzle flash, hit feedback, menus, line-of-sight checks for the AI (it currently shoots through walls; obstacle *avoidance* exists), per-vehicle stat presets, rectangular arenas.

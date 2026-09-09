@@ -217,6 +217,7 @@ GameObject:
   - component: {fileID: 90553709}
   - component: {fileID: 90553712}
   - component: {fileID: 90553711}
+  - component: {fileID: 90553713}
   m_Layer: 3
   m_Name: PlayerCar
   m_TagString: Player
@@ -404,6 +405,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHealth: 100
+  destroyOnDeath: 1
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -419,9 +421,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efedc0348f6fd134d84d523df0a0c6ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthBar
-  worldOffset: {x: 0, y: 2.4, z: 0}
-  size: {x: 1.8, y: 0.24}
-  border: 0.035
+  worldOffset: {x: 0, y: 2.9, z: 0}
+  size: {x: 2.7, y: 0.42}
+  border: 0.05
   backColor: {r: 0, g: 0, b: 0, a: 0.65}
   fullColor: {r: 0.25, g: 0.85, b: 0.3, a: 1}
   lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
@@ -443,6 +445,20 @@ MonoBehaviour:
   horizontalAxis: Horizontal
   verticalAxis: Vertical
   fireMouseButton: 0
+--- !u!114 &90553713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90553701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3a2fe774537b0240918b6111facfe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Respawner
+  dropHeight: 11
+  controlReturnDelay: 1.7
 --- !u!1 &173659821
 GameObject:
   m_ObjectHideFlags: 0
@@ -716,7 +732,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
   target: {fileID: 90553708}
-  offset: {x: 0, y: 24, z: -16}
+  offset: {x: 9, y: 30, z: -19}
   smoothSpeed: 5
 --- !u!1 &410087039
 GameObject:
@@ -845,6 +861,73 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &536706258
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 536706261}
+  - component: {fileID: 536706260}
+  - component: {fileID: 536706259}
+  m_Layer: 0
+  m_Name: GameDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &536706259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33a9077114301c4f9fd4cc25baf9bad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchDirector
+  respawnSeconds: 5
+  shakeDuration: 0.5
+  shakeMagnitude: 0.9
+  landingShakeDuration: 0.22
+  landingShakeMagnitude: 0.4
+--- !u!114 &536706260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe97f6d7d8e633f478a20b0f5619c0d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenFx
+  flashColor: {r: 1, g: 0.9, b: 0.75, a: 1}
+  flashPeakAlpha: 0.6
+  flashFade: 0.35
+  fontSize: 46
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &536706261
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &759914430
 GameObject:
   m_ObjectHideFlags: 0
@@ -1528,6 +1611,7 @@ GameObject:
   - component: {fileID: 1461479443}
   - component: {fileID: 1461479442}
   - component: {fileID: 1461479452}
+  - component: {fileID: 1461479453}
   m_Layer: 3
   m_Name: EnemyCar
   m_TagString: Untagged
@@ -1595,6 +1679,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHealth: 100
+  destroyOnDeath: 1
   onDeath:
     m_PersistentCalls:
       m_Calls: []
@@ -1764,12 +1849,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efedc0348f6fd134d84d523df0a0c6ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthBar
-  worldOffset: {x: 0, y: 2.4, z: 0}
-  size: {x: 1.8, y: 0.24}
-  border: 0.035
+  worldOffset: {x: 0, y: 2.9, z: 0}
+  size: {x: 2.7, y: 0.42}
+  border: 0.05
   backColor: {r: 0, g: 0, b: 0, a: 0.65}
   fullColor: {r: 0.25, g: 0.85, b: 0.3, a: 1}
   lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
+--- !u!114 &1461479453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1461479441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3a2fe774537b0240918b6111facfe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Respawner
+  dropHeight: 11
+  controlReturnDelay: 1.7
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0
@@ -2107,3 +2206,4 @@ SceneRoots:
   - {fileID: 1662633467}
   - {fileID: 85882282}
   - {fileID: 1461479451}
+  - {fileID: 536706261}

@@ -53,6 +53,7 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
     private Health health;
     private Collider selfCollider;
     private Team myTeam = Team.Enemy;
+    private Respawner targetRespawner;
     private float retargetTimer;
     private int orbitDir = 1;
     private float orbitFlipTimer;
@@ -81,9 +82,12 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
 
     void AcquireTarget()
     {
-        if (target != null) return;
-        GameObject go = GameObject.FindGameObjectWithTag(targetTag);
-        if (go != null) target = go.transform;
+        if (target == null)
+        {
+            GameObject go = GameObject.FindGameObjectWithTag(targetTag);
+            if (go != null) target = go.transform;
+        }
+        if (target != null) targetRespawner = target.GetComponent<Respawner>();
     }
 
     void ScheduleOrbitFlip()
@@ -101,6 +105,14 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
                 AcquireTarget();
                 retargetTimer = retargetInterval;
             }
+            MoveInput = Vector2.zero;
+            AimInput = Vector2.zero;
+            return;
+        }
+
+        // Don't chase a target that's currently dead / dropping back in.
+        if (targetRespawner != null && targetRespawner.IsDead)
+        {
             MoveInput = Vector2.zero;
             AimInput = Vector2.zero;
             return;
