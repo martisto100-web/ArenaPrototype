@@ -12,8 +12,9 @@ public class Respawner : MonoBehaviour
 {
     [Header("Drop-in respawn")]
     public float dropHeight = 7f;
-    public float dropSpeed = 12f;           // initial downward speed so the drop is quick
-    public float controlReturnDelay = 0.85f; // physics-only fall time before controls/AI resume
+    public float dropSpeed = 12f;         // initial downward speed so the drop is quick
+    public float landClearance = 0.7f;    // car pivot within this of a surface = landed, controls return
+    public float maxFallTime = 2.5f;      // safety cap if it somehow never lands
 
     public bool IsDead { get; private set; }
 
@@ -26,6 +27,7 @@ public class Respawner : MonoBehaviour
     private MeshRenderer[] meshes;
     private HealthBar bar;
     private MonoBehaviour[] controlScripts; // CarController / Weapon / EnemyDriverAI / PlayerInputRouter
+    private int groundMask;
 
     void Awake()
     {
@@ -38,6 +40,7 @@ public class Respawner : MonoBehaviour
         meshes = GetComponentsInChildren<MeshRenderer>();
         bar = GetComponent<HealthBar>();
         controlScripts = CollectControls();
+        groundMask = ~(1 << gameObject.layer); // everything except this car's own layer
 
         health.destroyOnDeath = false;
         health.Died += HandleDeath;
@@ -99,10 +102,26 @@ public class Respawner : MonoBehaviour
             body.angularVelocity = Vector3.zero;
         }
 
-        yield return new WaitForSeconds(controlReturnDelay); // let it fall and settle
+        // hand control back the instant it touches down (timeout is just a safety net)
+        float t = 0f;
+        while (t < maxFallTime && !IsGrounded())
+        {
+            t += Time.deltaTime;
+            yield return null;
+        }
 
         SetControls(true);
         IsDead = false;
+    }
+
+    bool IsGrounded()
+    {
+        Vector3 origin = transform.position + Vector3.up * 1.2f;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 10f, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            return (transform.position.y - hit.point.y) <= landClearance;
+        }
+        return false;
     }
 
     void SetControls(bool on)

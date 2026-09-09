@@ -1,10 +1,11 @@
+using System.Collections;
 using UnityEngine;
 
 // ATTACH THIS TO: a car root with a Health component.
 // Health-driven particle FX, all generated in code (no art assets):
 //   HealthFraction < smokeBelow -> smoke plume
 //   HealthFraction < fireBelow  -> flames
-//   on death                    -> one-shot explosion burst
+//   on death                    -> explosion burst + an expanding shockwave dome
 // The FX rig is a separate object that follows the car, so the car's
 // non-uniform scale doesn't distort the particles.
 public class DamageFx : MonoBehaviour
@@ -16,12 +17,20 @@ public class DamageFx : MonoBehaviour
     [Header("Placement")]
     public Vector3 worldOffset = new Vector3(0f, 0.4f, 0f);
 
+    [Header("Shockwave")]
+    public float shockwaveRadius = 6f;
+    public float shockwaveDuration = 0.4f;
+    public Color shockwaveColor = new Color(0.75f, 0.75f, 0.8f, 0.35f);
+
     private Health health;
     private Respawner respawner;
     private Transform rig;
     private ParticleSystem smoke;
     private ParticleSystem fire;
     private ParticleSystem explosion;
+    private Transform shockwave;
+    private Material shockwaveMat;
+    private Coroutine shockwaveCo;
 
     private static Material sharedMat;
     private static Texture2D softDot;
@@ -35,6 +44,7 @@ public class DamageFx : MonoBehaviour
         smoke = MakeSmoke();
         fire = MakeFire();
         explosion = MakeExplosion();
+        BuildShockwave();
         SetEmission(smoke, false);
         SetEmission(fire, false);
 
@@ -66,6 +76,53 @@ public class DamageFx : MonoBehaviour
         SetEmission(smoke, false);
         SetEmission(fire, false);
         if (explosion != null) { explosion.Clear(); explosion.Play(); }
+        if (shockwave != null)
+        {
+            if (shockwaveCo != null) StopCoroutine(shockwaveCo);
+            shockwaveCo = StartCoroutine(ShockwaveRoutine());
+        }
+    }
+
+    IEnumerator ShockwaveRoutine()
+    {
+        shockwave.gameObject.SetActive(true);
+        float t = 0f;
+        while (t < shockwaveDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / shockwaveDuration);
+            float eased = 1f - (1f - k) * (1f - k); // ease-out
+            float d = Mathf.Lerp(0.6f, shockwaveRadius * 2f, eased);
+            shockwave.localScale = new Vector3(d, d, d);
+            if (shockwaveMat != null)
+            {
+                Color c = shockwaveColor;
+                c.a = shockwaveColor.a * (1f - k);
+                shockwaveMat.color = c;
+            }
+            yield return null;
+        }
+        shockwave.gameObject.SetActive(false);
+    }
+
+    void BuildShockwave()
+    {
+        GameObject s = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        s.name = "shockwave";
+        Collider col = s.GetComponent<Collider>();
+        if (col != null) Destroy(col);
+        s.transform.SetParent(rig, false);
+        s.transform.localPosition = Vector3.zero;
+        s.transform.localScale = Vector3.zero;
+
+        MeshRenderer r = s.GetComponent<MeshRenderer>();
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        shockwaveMat = new Material(Shader.Find("Sprites/Default")) { color = shockwaveColor };
+        r.material = shockwaveMat;
+
+        shockwave = s.transform;
+        s.SetActive(false);
     }
 
     // ---- builders ----
@@ -121,24 +178,24 @@ public class DamageFx : MonoBehaviour
         ParticleSystem ps = NewSystem("fire", true);
         ParticleSystem.MainModule main = ps.main;
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
-        main.startLifetime = 0.5f;
-        main.startSpeed = 1.9f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.35f, 0.7f);
-        main.startColor = new Color(1f, 0.55f, 0.12f, 0.9f);
-        main.gravityModifier = -0.12f;
-        main.maxParticles = 60;
+        main.startLifetime = 0.65f;
+        main.startSpeed = 2.3f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.65f, 1.35f);
+        main.startColor = new Color(1f, 0.55f, 0.12f, 1f);
+        main.gravityModifier = -0.16f;
+        main.maxParticles = 130;
 
         ParticleSystem.EmissionModule em = ps.emission;
-        em.rateOverTime = 34f;
+        em.rateOverTime = 62f;
 
         ParticleSystem.ShapeModule sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Cone;
-        sh.angle = 12f;
-        sh.radius = 0.18f;
+        sh.angle = 18f;
+        sh.radius = 0.3f;
         sh.rotation = new Vector3(-90f, 0f, 0f);
 
-        FadeAlpha(ps, 0.12f, 0.9f, new Color(1f, 0.75f, 0.2f));
-        GrowSize(ps, 1f, 0.35f);
+        FadeAlpha(ps, 0.1f, 1f, new Color(1f, 0.72f, 0.22f));
+        GrowSize(ps, 1f, 0.3f);
         return ps;
     }
 

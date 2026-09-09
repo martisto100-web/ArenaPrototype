@@ -458,9 +458,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a2fe774537b0240918b6111facfe58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Respawner
-  dropHeight: 11
+  dropHeight: 7
   dropSpeed: 12
-  controlReturnDelay: 1.7
+  landClearance: 0.7
+  maxFallTime: 2.5
 --- !u!114 &90553714
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -476,6 +477,9 @@ MonoBehaviour:
   smokeBelow: 0.5
   fireBelow: 0.2
   worldOffset: {x: 0, y: 0.4, z: 0}
+  shockwaveRadius: 6
+  shockwaveDuration: 0.4
+  shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
 --- !u!1 &148833470
 GameObject:
   m_ObjectHideFlags: 0
@@ -1897,6 +1901,9 @@ MonoBehaviour:
   feelerLength: 5
   avoidWeight: 1.6
   attackRange: 24
+  roamCenter: {x: 0, y: 0, z: 0}
+  roamRadius: 16
+  roamReachDistance: 3
 --- !u!114 &1461479443
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2111,9 +2118,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3a2fe774537b0240918b6111facfe58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Respawner
-  dropHeight: 11
+  dropHeight: 7
   dropSpeed: 12
-  controlReturnDelay: 1.7
+  landClearance: 0.7
+  maxFallTime: 2.5
 --- !u!114 &1461479454
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2129,6 +2137,9 @@ MonoBehaviour:
   smokeBelow: 0.5
   fireBelow: 0.2
   worldOffset: {x: 0, y: 0.4, z: 0}
+  shockwaveRadius: 6
+  shockwaveDuration: 0.4
+  shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0

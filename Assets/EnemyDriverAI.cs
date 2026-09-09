@@ -44,6 +44,11 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
     [Header("Firing")]
     public float attackRange = 24f;
 
+    [Header("Roaming (while there's no live target)")]
+    public Vector3 roamCenter = Vector3.zero;
+    public float roamRadius = 16f;
+    public float roamReachDistance = 3f;
+
     public Vector2 MoveInput { get; private set; }
     public Vector2 AimInput { get; private set; }
 
@@ -58,6 +63,8 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
     private int orbitDir = 1;
     private float orbitFlipTimer;
     private float wanderSeed;
+    private Vector3 roamPoint;
+    private bool hasRoamPoint;
 
     // Per-bullet memory so the dodge has human-like lag: when we first saw a
     // bullet, and whether we rolled to bother dodging it at all.
@@ -105,18 +112,17 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
                 AcquireTarget();
                 retargetTimer = retargetInterval;
             }
-            MoveInput = Vector2.zero;
-            AimInput = Vector2.zero;
-            return;
         }
 
-        // Don't chase a target that's currently dead / dropping back in.
-        if (targetRespawner != null && targetRespawner.IsDead)
+        // No live target (none found, or it's dead / dropping back in): keep
+        // moving — roam the arena instead of standing still.
+        bool targetLive = target != null && (targetRespawner == null || !targetRespawner.IsDead);
+        if (!targetLive)
         {
-            MoveInput = Vector2.zero;
-            AimInput = Vector2.zero;
+            Roam();
             return;
         }
+        hasRoamPoint = false;
 
         Vector3 selfPos = transform.position;
         Vector3 toTarget = target.position - selfPos;
@@ -155,6 +161,32 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
         MoveInput = new Vector2(move.x, move.z);
 
         AimInput = dist <= attackRange ? new Vector2(dir.x, dir.z) : Vector2.zero;
+    }
+
+    // Drive to random points around roamCenter, holding fire, until a live
+    // target is available again.
+    void Roam()
+    {
+        Vector3 selfPos = transform.position;
+        Vector2 flat = new Vector2(roamPoint.x - selfPos.x, roamPoint.z - selfPos.z);
+        if (!hasRoamPoint || flat.sqrMagnitude < roamReachDistance * roamReachDistance)
+        {
+            Vector2 p = Random.insideUnitCircle * roamRadius;
+            roamPoint = roamCenter + new Vector3(p.x, 0f, p.y);
+            hasRoamPoint = true;
+        }
+
+        Vector3 to = roamPoint - selfPos;
+        to.y = 0f;
+        Vector3 dir = to.sqrMagnitude > 0.01f ? to.normalized : transform.forward;
+
+        float wanderAngle = (Mathf.PerlinNoise(Time.time * wanderFrequency, wanderSeed) - 0.5f) * 2f * Mathf.PI;
+        Vector3 wander = new Vector3(Mathf.Cos(wanderAngle), 0f, Mathf.Sin(wanderAngle)) * wanderWeight;
+        Vector3 avoid = ComputeAvoidance(selfPos) * avoidWeight;
+
+        Vector3 move = Vector3.ClampMagnitude(dir + wander + avoid, 1f);
+        MoveInput = new Vector2(move.x, move.z);
+        AimInput = Vector2.zero;
     }
 
     // Sum of sideways pushes away from the paths of incoming player bullets.
