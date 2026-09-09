@@ -477,6 +477,8 @@ MonoBehaviour:
   smokeBelow: 0.5
   fireBelow: 0.3
   worldOffset: {x: 0, y: 0.4, z: 0}
+  flameCount: 4
+  flameArea: {x: 0.9, y: 0.1, z: 1.6}
   shockwaveRadius: 6
   shockwaveDuration: 0.4
   shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
@@ -576,6 +578,7 @@ GameObject:
   - component: {fileID: 296512678}
   - component: {fileID: 296512677}
   - component: {fileID: 296512676}
+  - component: {fileID: 296512679}
   m_Layer: 5
   m_Name: movejoystick bg
   m_TagString: Untagged
@@ -655,6 +658,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296512674}
   m_CullTransparentMesh: 1
+--- !u!114 &296512679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296512674}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca881ee393dd1dd4e8f76339c0c02421, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JoystickSkin
+  glyph: 1
+  backgroundOpacity: 0.3
+  handleOpacity: 0.42
+  backgroundGlyphOpacity: 0.22
+  handleGlyphOpacity: 0.8
+  ringColor: {r: 1, g: 1, b: 1, a: 1}
+  glyphColor: {r: 0.12, g: 0.12, b: 0.12, a: 1}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,6 +1729,7 @@ GameObject:
   - component: {fileID: 1257424654}
   - component: {fileID: 1257424653}
   - component: {fileID: 1257424652}
+  - component: {fileID: 1257424655}
   m_Layer: 5
   m_Name: aimjoystick bg
   m_TagString: Untagged
@@ -1786,6 +1809,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1257424650}
   m_CullTransparentMesh: 1
+--- !u!114 &1257424655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1257424650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca881ee393dd1dd4e8f76339c0c02421, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JoystickSkin
+  glyph: 2
+  backgroundOpacity: 0.3
+  handleOpacity: 0.42
+  backgroundGlyphOpacity: 0.22
+  handleGlyphOpacity: 0.8
+  ringColor: {r: 1, g: 1, b: 1, a: 1}
+  glyphColor: {r: 0.12, g: 0.12, b: 0.12, a: 1}
 --- !u!1 &1391860513
 GameObject:
   m_ObjectHideFlags: 0
@@ -2137,6 +2179,8 @@ MonoBehaviour:
   smokeBelow: 0.5
   fireBelow: 0.3
   worldOffset: {x: 0, y: 0.4, z: 0}
+  flameCount: 4
+  flameArea: {x: 0.9, y: 0.1, z: 1.6}
   shockwaveRadius: 6
   shockwaveDuration: 0.4
   shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
