@@ -13,9 +13,9 @@ public class OffscreenMarkers : MonoBehaviour
     public Color enemyColor = new Color(0.95f, 0.2f, 0.16f, 0.95f);
     public Color allyColor = new Color(1f, 0.84f, 0.16f, 0.95f);
 
-    [Header("Layout (reference: 1920x1080)")]
-    public float arrowSize = 62f;
-    public float edgeMargin = 64f;
+    [Header("Layout")]
+    public float arrowSize = 62f;      // reference px (1920x1080 canvas)
+    public float edgeMargin = 70f;     // screen px inset from the edge
     public string playerTag = "Player";
 
     [Header("Refresh")]
@@ -26,6 +26,7 @@ public class OffscreenMarkers : MonoBehaviour
 
     private Camera cam;
     private Canvas canvas;
+    private RectTransform canvasRect;
     private Sprite arrowSprite;
     private readonly List<Image> pool = new List<Image>();
 
@@ -55,6 +56,8 @@ public class OffscreenMarkers : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(RefW, RefH);
         scaler.matchWidthOrHeight = 0.5f;
+
+        canvasRect = go.GetComponent<RectTransform>();
     }
 
     void Rescan()
@@ -87,8 +90,11 @@ public class OffscreenMarkers : MonoBehaviour
 
         if (cam == null) { HideFrom(0); return; }
 
-        float halfX = 0.5f - edgeMargin / RefW;
-        float halfY = 0.5f - edgeMargin / RefH;
+        float w = Screen.width;
+        float h = Screen.height;
+        Vector2 center = new Vector2(w, h) * 0.5f;
+        float boundX = Mathf.Max(10f, w * 0.5f - edgeMargin);
+        float boundY = Mathf.Max(10f, h * 0.5f - edgeMargin);
 
         int used = 0;
         for (int i = 0; i < combatants.Count; i++)
@@ -99,22 +105,25 @@ public class OffscreenMarkers : MonoBehaviour
             Respawner rs = tm.GetComponent<Respawner>();
             if (rs != null && rs.IsDead) continue;
 
-            Vector3 vp = cam.WorldToViewportPoint(tm.transform.position + Vector3.up);
-            bool behind = vp.z < 0f;
-            Vector2 c = new Vector2(vp.x - 0.5f, vp.y - 0.5f);
-            if (behind) c = -c;
+            Vector3 sp = cam.WorldToScreenPoint(tm.transform.position + Vector3.up);
+            bool behind = sp.z < 0f;
+            Vector2 p = behind ? new Vector2(w - sp.x, h - sp.y) : new Vector2(sp.x, sp.y);
 
-            bool onScreen = !behind && vp.x >= 0f && vp.x <= 1f && vp.y >= 0f && vp.y <= 1f;
+            bool onScreen = !behind && sp.x >= 0f && sp.x <= w && sp.y >= 0f && sp.y <= h;
             if (onScreen) continue;
 
-            if (c.sqrMagnitude < 1e-6f) c = new Vector2(0f, -0.5f);
-            float scale = Mathf.Min(halfX / Mathf.Max(Mathf.Abs(c.x), 1e-4f),
-                                    halfY / Mathf.Max(Mathf.Abs(c.y), 1e-4f));
-            Vector2 edge = c * scale;
+            Vector2 dir = p - center;
+            if (dir.sqrMagnitude < 1e-4f) dir = Vector2.down;
+
+            float k = Mathf.Min(boundX / Mathf.Max(Mathf.Abs(dir.x), 1e-4f),
+                                boundY / Mathf.Max(Mathf.Abs(dir.y), 1e-4f));
+            Vector2 edgeScreen = center + dir * k;
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, edgeScreen, null, out Vector2 local);
 
             Image arrow = GetArrow(used++);
-            arrow.rectTransform.anchoredPosition = new Vector2(edge.x * RefW, edge.y * RefH);
-            arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(c.y, c.x) * Mathf.Rad2Deg - 90f);
+            arrow.rectTransform.anchoredPosition = local;
+            arrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f);
             arrow.color = (tm.team == playerTeam) ? allyColor : enemyColor;
         }
 
