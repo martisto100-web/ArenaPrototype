@@ -11,8 +11,9 @@ using UnityEngine;
 public class Respawner : MonoBehaviour
 {
     [Header("Drop-in respawn")]
-    public float dropHeight = 11f;
-    public float controlReturnDelay = 1.7f; // physics-only fall time before controls/AI resume
+    public float dropHeight = 7f;
+    public float dropSpeed = 12f;           // initial downward speed so the drop is quick
+    public float controlReturnDelay = 0.85f; // physics-only fall time before controls/AI resume
 
     public bool IsDead { get; private set; }
 
@@ -94,7 +95,7 @@ public class Respawner : MonoBehaviour
         if (body != null)
         {
             body.isKinematic = false;
-            body.linearVelocity = Vector3.zero;
+            body.linearVelocity = Vector3.down * dropSpeed;
             body.angularVelocity = Vector3.zero;
         }
 

@@ -50,8 +50,8 @@ public class MatchDirector : MonoBehaviour
         TeamMember tm = h.GetComponent<TeamMember>();
         bool isPlayer = tm == null || tm.team == Team.Player;
 
-        if (cameraFollow != null) cameraFollow.Shake(shakeDuration, shakeMagnitude);
-        if (screenFx != null) screenFx.Flash();
+        if (cameraFollow != null && GameSettings.ScreenShakeOnElimination) cameraFollow.Shake(shakeDuration, shakeMagnitude);
+        if (screenFx != null && GameSettings.ScreenFlashOnElimination) screenFx.Flash();
 
         string label = isPlayer ? "Respawning in:" : "Enemy respawns in:";
         StartCoroutine(RespawnRoutine(respawner, label, isPlayer));
@@ -80,6 +80,6 @@ public class MatchDirector : MonoBehaviour
         }
 
         if (respawner != null) respawner.Respawn();
-        if (cameraFollow != null) cameraFollow.Shake(landingShakeDuration, landingShakeMagnitude);
+        if (cameraFollow != null && GameSettings.ScreenShakeOnElimination) cameraFollow.Shake(landingShakeDuration, landingShakeMagnitude);
     }
 }
