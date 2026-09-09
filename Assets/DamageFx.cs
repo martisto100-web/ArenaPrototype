@@ -17,6 +17,10 @@ public class DamageFx : MonoBehaviour
     [Header("Placement")]
     public Vector3 worldOffset = new Vector3(0f, 0.4f, 0f);
 
+    [Header("Flames")]
+    public int flameCount = 4;
+    public Vector3 flameArea = new Vector3(0.9f, 0.1f, 1.6f); // half-extents for random placement on the car
+
     [Header("Shockwave")]
     public float shockwaveRadius = 6f;
     public float shockwaveDuration = 0.4f;
@@ -42,13 +46,20 @@ public class DamageFx : MonoBehaviour
 
         rig = new GameObject(name + "_DamageFx").transform;
         smoke = MakeSmoke();
-        fires = new[]
+
+        // Scatter the flame tufts at random spots over the car body, each a
+        // slightly different size / rate, so it looks like it's burning all over
+        // rather than one jet from the middle.
+        fires = new ParticleSystem[Mathf.Max(1, flameCount)];
+        for (int i = 0; i < fires.Length; i++)
         {
-            MakeFire(new Vector3(0f, 0.05f, -0.1f), 0.75f, 40f),   // centre (now smaller)
-            MakeFire(new Vector3(-0.6f, -0.05f, 0.35f), 0.5f, 26f), // left
-            MakeFire(new Vector3(0.6f, -0.05f, 0.35f), 0.5f, 26f),  // right
-            MakeFire(new Vector3(0f, -0.05f, -0.95f), 0.55f, 28f),  // rear
-        };
+            Vector3 p = new Vector3(
+                Random.Range(-flameArea.x, flameArea.x),
+                Random.Range(-flameArea.y, flameArea.y),
+                Random.Range(-flameArea.z, flameArea.z));
+            fires[i] = MakeFire(p, Random.Range(0.6f, 1f), Random.Range(28f, 44f));
+        }
+
         explosion = MakeExplosion();
         BuildShockwave();
 
@@ -168,10 +179,10 @@ public class DamageFx : MonoBehaviour
         main.startSize = new ParticleSystem.MinMaxCurve(0.55f, 1.1f);
         main.startColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         main.gravityModifier = -0.04f;
-        main.maxParticles = 145;
+        main.maxParticles = 300;
 
         ParticleSystem.EmissionModule em = ps.emission;
-        em.rateOverTime = 27f; // denser plume
+        em.rateOverTime = 54f; // dense plume
 
         ParticleSystem.ShapeModule sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Sphere;
@@ -193,7 +204,7 @@ public class DamageFx : MonoBehaviour
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
         main.startLifetime = 0.6f;
         main.startSpeed = 2.1f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.73f * sizeScale, 1.63f * sizeScale); // bigger flames
+        main.startSize = new ParticleSystem.MinMaxCurve(1.5f * sizeScale, 3.3f * sizeScale); // big flames
         main.startColor = new Color(1f, 0.55f, 0.12f, 1f);
         main.gravityModifier = -0.16f;
         main.maxParticles = 90;
