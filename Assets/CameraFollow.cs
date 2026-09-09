@@ -5,7 +5,7 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;       // drag your vehicle here in the Inspector
-    public Vector3 offset = new Vector3(0f, 14f, -9f); // height and back-distance from target
+    public Vector3 offset = new Vector3(0f, 24f, -16f); // height and back-distance from target (pulled back for a wide tactical view)
     public float smoothSpeed = 5f;
 
     void LateUpdate()

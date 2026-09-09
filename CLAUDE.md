@@ -25,7 +25,7 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | `Projectile.cs` | `bullet.prefab` | Flies forward (`speed 40`, `damage 4`); on `OnTriggerEnter` passes through same-`team` (incl. shooter), else `Health.TakeDamage` + destroy. `team` set by the firing `Weapon`. |
 | `Health.cs` | anything damageable | `maxHealth`, `CurrentHealth`, `HealthFraction`, `TakeDamage(amount)`. `Die()` invokes `UnityEvent onDeath` then `Destroy`s. |
 | `TeamMember.cs` | a vehicle root | `enum Team { Player, Enemy }` + one field. No `TeamMember` = neutral (destructible props) — hittable by anyone. |
-| `CameraFollow.cs` | Main Camera | Smoothed elevated angled-down chase cam; `target` = the player vehicle. |
+| `CameraFollow.cs` | Main Camera | Smoothed elevated angled-down chase cam; `target` = the player vehicle. `offset` `(0,24,-16)` — pulled back for a wide tactical view (tune on the component). |
 | `VirtualJoystick.cs` | a UI Image (bg) with a child handle Image | Touch stick; exposes `InputVector` (-1..1 per axis). Two instances: move + aim. |
 
 - **Scene:** `Assets/Scenes/SampleScene.unity` (the only scene).
@@ -33,6 +33,7 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
   - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as PlayerCar but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar`; child `FirePoint`.
   - Four `Cube`s — static obstacles (BoxCollider, no team/health).
   - `Plane` is 50×50 world units centred on origin (playable area ≈ x/z ∈ [-25, 25]).
+- **Physics layers:** both cars are on `Player` (3), bullets on `Projectiles` (6). The Layer Collision Matrix is left fully enabled — `Projectile.cs` filters friendly/self hits by `Team` in code, so don't disable Projectiles↔anything or bullets stop registering.
 - `Assets/Materials/` — runtime materials (`EnemyCar.mat`).
 - `Assets/TutorialInfo/` and `Assets/Readme.asset` are leftover URP-template content — safe to ignore or delete.
 
