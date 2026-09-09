@@ -475,7 +475,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageFx
   smokeBelow: 0.5
-  fireBelow: 0.2
+  fireBelow: 0.3
   worldOffset: {x: 0, y: 0.4, z: 0}
   shockwaveRadius: 6
   shockwaveDuration: 0.4
@@ -2135,7 +2135,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageFx
   smokeBelow: 0.5
-  fireBelow: 0.2
+  fireBelow: 0.3
   worldOffset: {x: 0, y: 0.4, z: 0}
   shockwaveRadius: 6
   shockwaveDuration: 0.4

@@ -12,7 +12,7 @@ public class DamageFx : MonoBehaviour
 {
     [Header("Thresholds (fraction of max health)")]
     [Range(0f, 1f)] public float smokeBelow = 0.5f;
-    [Range(0f, 1f)] public float fireBelow = 0.2f;
+    [Range(0f, 1f)] public float fireBelow = 0.3f;
 
     [Header("Placement")]
     public Vector3 worldOffset = new Vector3(0f, 0.4f, 0f);
@@ -26,7 +26,7 @@ public class DamageFx : MonoBehaviour
     private Respawner respawner;
     private Transform rig;
     private ParticleSystem smoke;
-    private ParticleSystem fire;
+    private ParticleSystem[] fires;
     private ParticleSystem explosion;
     private Transform shockwave;
     private Material shockwaveMat;
@@ -42,11 +42,18 @@ public class DamageFx : MonoBehaviour
 
         rig = new GameObject(name + "_DamageFx").transform;
         smoke = MakeSmoke();
-        fire = MakeFire();
+        fires = new[]
+        {
+            MakeFire(new Vector3(0f, 0.05f, -0.1f), 0.75f, 40f),   // centre (now smaller)
+            MakeFire(new Vector3(-0.6f, -0.05f, 0.35f), 0.5f, 26f), // left
+            MakeFire(new Vector3(0.6f, -0.05f, 0.35f), 0.5f, 26f),  // right
+            MakeFire(new Vector3(0f, -0.05f, -0.95f), 0.55f, 28f),  // rear
+        };
         explosion = MakeExplosion();
         BuildShockwave();
+
         SetEmission(smoke, false);
-        SetEmission(fire, false);
+        SetFires(false);
 
         if (health != null) health.Died += OnDied;
     }
@@ -59,7 +66,9 @@ public class DamageFx : MonoBehaviour
 
     void LateUpdate()
     {
-        if (rig != null) rig.position = transform.position + worldOffset;
+        if (rig == null) return;
+        rig.position = transform.position + worldOffset;
+        rig.rotation = transform.rotation; // so the side/rear flames stay car-relative
     }
 
     void Update()
@@ -68,13 +77,13 @@ public class DamageFx : MonoBehaviour
         bool dead = health.IsDead || (respawner != null && respawner.IsDead);
         float f = health.HealthFraction;
         SetEmission(smoke, !dead && f < smokeBelow);
-        SetEmission(fire, !dead && f < fireBelow);
+        SetFires(!dead && f < fireBelow);
     }
 
     void OnDied(Health h)
     {
         SetEmission(smoke, false);
-        SetEmission(fire, false);
+        SetFires(false);
         if (explosion != null) { explosion.Clear(); explosion.Play(); }
         if (shockwave != null)
         {
@@ -173,30 +182,40 @@ public class DamageFx : MonoBehaviour
         return ps;
     }
 
-    ParticleSystem MakeFire()
+    // One flame tuft. Several are placed around the car (centre + sides + rear)
+    // so it reads as a vehicle on fire rather than one jet from the middle.
+    ParticleSystem MakeFire(Vector3 localPos, float sizeScale, float rate)
     {
         ParticleSystem ps = NewSystem("fire", true);
+        ps.transform.localPosition = localPos;
+
         ParticleSystem.MainModule main = ps.main;
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
-        main.startLifetime = 0.65f;
-        main.startSpeed = 2.3f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.65f, 1.35f);
+        main.startLifetime = 0.6f;
+        main.startSpeed = 2.1f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.45f * sizeScale, 1.0f * sizeScale);
         main.startColor = new Color(1f, 0.55f, 0.12f, 1f);
         main.gravityModifier = -0.16f;
-        main.maxParticles = 130;
+        main.maxParticles = 90;
 
         ParticleSystem.EmissionModule em = ps.emission;
-        em.rateOverTime = 62f;
+        em.rateOverTime = rate;
 
         ParticleSystem.ShapeModule sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Cone;
-        sh.angle = 18f;
-        sh.radius = 0.3f;
+        sh.angle = 16f;
+        sh.radius = 0.2f * Mathf.Max(0.4f, sizeScale);
         sh.rotation = new Vector3(-90f, 0f, 0f);
 
         FadeAlpha(ps, 0.1f, 1f, new Color(1f, 0.72f, 0.22f));
         GrowSize(ps, 1f, 0.3f);
         return ps;
+    }
+
+    void SetFires(bool on)
+    {
+        if (fires == null) return;
+        for (int i = 0; i < fires.Length; i++) SetEmission(fires[i], on);
     }
 
     ParticleSystem MakeExplosion()
