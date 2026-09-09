@@ -168,10 +168,10 @@ public class DamageFx : MonoBehaviour
         main.startSize = new ParticleSystem.MinMaxCurve(0.55f, 1.1f);
         main.startColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         main.gravityModifier = -0.04f;
-        main.maxParticles = 80;
+        main.maxParticles = 110;
 
         ParticleSystem.EmissionModule em = ps.emission;
-        em.rateOverTime = 16f;
+        em.rateOverTime = 21f; // ~30% denser
 
         ParticleSystem.ShapeModule sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Sphere;
@@ -193,7 +193,7 @@ public class DamageFx : MonoBehaviour
         main.simulationSpace = ParticleSystemSimulationSpace.Local;
         main.startLifetime = 0.6f;
         main.startSpeed = 2.1f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.45f * sizeScale, 1.0f * sizeScale);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.56f * sizeScale, 1.25f * sizeScale); // ~25% bigger
         main.startColor = new Color(1f, 0.55f, 0.12f, 1f);
         main.gravityModifier = -0.16f;
         main.maxParticles = 90;
