@@ -2,8 +2,8 @@ using UnityEngine;
 
 // ATTACH THIS TO: your bullet/rocket prefab (not to the vehicle).
 // Team is set by the Weapon that fires it; bullets pass through anything on the
-// same team (including the shooter). Neutral objects with no TeamMember
-// (destructible props) can be hit by any bullet.
+// same team (including the shooter) and through other bullets. Neutral objects
+// with no TeamMember (destructible props) can be hit by any bullet.
 public class Projectile : MonoBehaviour
 {
     public float speed = 40f;
@@ -24,6 +24,11 @@ public class Projectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (other.GetComponentInParent<Projectile>() != null)
+        {
+            return; // bullets pass through each other
+        }
+
         TeamMember hitTeam = other.GetComponentInParent<TeamMember>();
         if (hitTeam != null && hitTeam.team == team)
         {
