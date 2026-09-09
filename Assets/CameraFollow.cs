@@ -6,7 +6,7 @@ using UnityEngine;
 public class CameraFollow : MonoBehaviour
 {
     public Transform target;       // drag your vehicle here in the Inspector
-    public Vector3 offset = new Vector3(9f, 30f, -19f); // up + back + to the side, pulled out for a wide view
+    public Vector3 offset = new Vector3(0f, 13f, -16f); // behind + above, ~35 deg down: an action chase view
     public float smoothSpeed = 5f;
 
     private float shakeDuration;

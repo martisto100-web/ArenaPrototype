@@ -31,14 +31,15 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | `Projectile.cs` | `bullet.prefab` | Flies forward (`speed 40`, `damage 4`); on `OnTriggerEnter` passes through same-`team` (incl. shooter), else `Health.TakeDamage` + destroy. `team` set by the firing `Weapon`. Prefab visual: thin stretched cube (`scale 0.09×0.09×0.6`) with `Assets/Materials/Bullet.mat` (yellow URP Unlit) — a tracer round. Hitbox is a `SphereCollider` (trigger). |
 | `Health.cs` | anything damageable | `maxHealth`, `CurrentHealth`, `HealthFraction`, `IsDead`, `TakeDamage`, `Revive()`. `Died` (C# `event Action<Health>`) + `onDeath` (`UnityEvent`) fire in `Die()`; `Destroy`s only if `destroyOnDeath` (a `Respawner` clears that). |
 | `TeamMember.cs` | a vehicle root | `enum Team { Player, Enemy }` + one field. No `TeamMember` = neutral (destructible props) — hittable by anyone. |
-| `CameraFollow.cs` | Main Camera | Smoothed elevated 3/4 chase cam; `target` = player. `offset` `(9,30,-19)` — up/back/side, pulled out for a wide view. `Shake(duration, magnitude)` for kill/landing juice. |
+| `CameraFollow.cs` | Main Camera | Smoothed chase cam; `target` = player. `offset` `(0,13,-16)` — directly behind + above, ~35° down (an action view; horizon in the upper third). Camera FOV 62. `Shake(duration, magnitude)` for kill/landing juice. |
+| `OffscreenMarkers.cs` | `GameDirector` | Screen-edge arrow for every combatant that's off-camera, pointing at it. Colour is relative to the local player (tag `Player`): other team → red, same team → yellow. Runtime overlay canvas + pooled code-drawn arrow Images with an `Outline`. |
 | `VirtualJoystick.cs` | a UI Image (bg) with a child handle Image | Touch stick; exposes `InputVector` (-1..1 per axis). Two instances: move + aim. |
 | `JoystickSkin.cs` | a joystick `bg` object (with `VirtualJoystick` + `Image`) | Reskins the bg + handle Images at runtime as translucent circles with a code-drawn glyph (`glyph`: `DirectionalArrows` on the move stick, `Bullet` on the fire stick). `backgroundOpacity` / `handleOpacity` / glyph opacities tune the look. |
 
 - **Scene:** `Assets/Scenes/SampleScene.unity` (the only scene).
   - `PlayerCar` — tag `Player`, layer `Player`; `CarController` + `Weapon` (still hold the two `VirtualJoystick` refs) + `Health(100)` + `TeamMember(Player)` + `PlayerInputRouter` + `HealthBar` + `Respawner` + `DamageFx`; child `FirePoint`.
   - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as PlayerCar but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar` + `Respawner` + `DamageFx`; child `FirePoint`.
-  - `GameDirector` — empty; `MatchDirector` + `ScreenFx` + `KillFloor`.
+  - `GameDirector` — empty; `MatchDirector` + `ScreenFx` + `KillFloor` + `OffscreenMarkers`.
   - `Arena_Wall_N/S/E/W` — invisible BoxCollider boundary walls at the Plane edges (±25.5), so cars can't drive off. Some future arenas will omit these (falling = a hazard, caught by `KillFloor`).
   - `Canvas/movejoystick bg` + `aimjoystick bg` — the two `VirtualJoystick`s, each also carrying a `JoystickSkin` (arrows / bullet glyph).
   - Four `Cube`s — static obstacles (BoxCollider, no team/health).
