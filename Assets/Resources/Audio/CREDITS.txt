@@ -14,6 +14,20 @@ Fire/mgshot_1..4.ogg  -  machine gun, one .50-cal shot per bullet (Weapon.cs)
   Reference the user matched this to (same publisher, spray version):
     https://pixabay.com/sound-effects/film-special-effects-066496-heavy-machine-gun-50-caliber-28243/
 
+BulletImpact/impact_1..3.ogg  -  enemy bullet hitting the player's car (Projectile.cs)
+  Source: "BLLTImpt - Samsung Galaxy Smartphone, CU_On Metal" by Nicholas Judy /
+    designerschoice, from Pixabay
+    https://pixabay.com/sound-effects/film-special-effects-blltimpt-samsung-galaxy-smartphone-cu-on-metal-nicholas-judy-tdc-488782/
+  License: Pixabay Content License (same terms as the rest).
+  ffmpeg: 3 near-identical hits sliced from the 43s take, mono, pitched to ~0.90
+  for car-panel weight, low-mid bump, highs rolled off (lowpass ~4.6k + high-
+  shelf cut) and attack eased so it doesn't grab the ear, ~0.22s, normalised to
+  a gentle -4 dBFS. Projectile round-robins them, +/-6% pitch jitter, 2D, only
+  when the bullet damages the "Player"-tagged car. Playback level is the player
+  setting GameSettings.BulletHitVolume (raw 0..0.4, default 0.23, 0 = off).
+  The settings menu will show this as GameSettings.BulletHitVolumePercent, a
+  0..100 slider (100 = 0.4); 0.23 default reads as ~57.5.
+
 Explosion/explosion.ogg  -  elimination explosion (DamageFx.cs)
   Source: "Explosion FX" by SoundReality, from Pixabay (48 kHz source)
     https://pixabay.com/sound-effects/film-special-effects-explosion-fx-343683/
