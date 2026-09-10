@@ -1,0 +1,32 @@
+SOUND EFFECTS - sources & licenses
+==================================
+
+Fire/mgshot_1..4.ogg  -  machine gun, one .50-cal shot per bullet (Weapon.cs)
+  Source: "072807_Heavy Machine Gun (.50 Caliber)" by freesound_community, from
+    Pixabay - https://pixabay.com/sound-effects/film-special-effects-072807-heavy-machine-gun-50-caliber-39765/
+  License: Pixabay Content License - https://pixabay.com/service/license-summary/
+    Free for commercial use, no attribution required. You may NOT resell or
+    redistribute the sound files themselves as-is (e.g. as a stock-audio pack).
+    Baked into the game as SFX = an allowed use.
+  Processing (ffmpeg): trimmed lead silence, 4 variants at slightly different
+    pitch (1.00 / 0.97 / 0.94 / 0.985) and tail length (1.1-1.45s), peak
+    normalised. No EQ/drive - the source already has the deep .50-cal weight.
+  Reference the user matched this to (same publisher, spray version):
+    https://pixabay.com/sound-effects/film-special-effects-066496-heavy-machine-gun-50-caliber-28243/
+
+Explosion/explosion.ogg  -  elimination explosion (DamageFx.cs)
+  Source: "Explosion FX" by SoundReality, from Pixabay (48 kHz source)
+    https://pixabay.com/sound-effects/film-special-effects-explosion-fx-343683/
+  License: Pixabay Content License (same terms as the gun above).
+  ffmpeg: mono 44.1 kHz, trimmed lead silence, 24 Hz high-pass, +2.3 dB (~+30%,
+  user's call), trimmed to ~3.6s, smooth exponential fade-out on the tail,
+  limiter to catch the boosted peak.
+  (Superseded: Kenney sci-fi "explosionCrunch"; Pixabay "Loud Explosion",
+  "Explosion_01", "Medium Explosion".)
+
+NOT used
+  - Audio ripped from YouTube "no copyright" channels (uploader claim != license,
+    and it breaks YouTube ToS). The Pixabay file above is the real licensed source
+    of the clip the user referenced.
+  - Superseded fire takes: Kenney sci-fi lasers; a synth PPSh fire loop; an
+    AK-47/Mosin/bolt-clack layered one-shot set.

@@ -5,7 +5,10 @@ using UnityEngine;
 // Health-driven particle FX, all generated in code (no art assets):
 //   HealthFraction < smokeBelow -> smoke plume
 //   HealthFraction < fireBelow  -> flames
-//   on death                    -> explosion burst + an expanding shockwave dome
+//   on death                    -> explosion burst + shockwave dome + an
+//                                  explosionSfx clip (2D, ~2s, smooth fade-out
+//                                  tail baked in). Auto-loads from
+//                                  Resources/Audio/Explosion if left empty.
 // The FX rig is a separate object that follows the car, so the car's
 // non-uniform scale doesn't distort the particles.
 public class DamageFx : MonoBehaviour
@@ -26,8 +29,14 @@ public class DamageFx : MonoBehaviour
     public float shockwaveDuration = 0.4f;
     public Color shockwaveColor = new Color(0.75f, 0.75f, 0.8f, 0.35f);
 
+    [Header("Explosion audio")]
+    public AudioClip[] explosionSfx;                      // empty -> loaded from Resources/Audio/Explosion
+    [Range(0f, 1f)] public float explosionVolume = 1f;    // rare punctuation, so louder than the gun
+    [Range(0f, 0.5f)] public float explosionPitchJitter = 0f; // one deliberate clip with a baked fade - no jitter
+
     private Health health;
     private Respawner respawner;
+    private AudioSource audioSource;
     private Transform rig;
     private ParticleSystem smoke;
     private ParticleSystem[] fires;
@@ -62,11 +71,27 @@ public class DamageFx : MonoBehaviour
 
         explosion = MakeExplosion();
         BuildShockwave();
+        SetupAudio();
 
         SetEmission(smoke, false);
         SetFires(false);
 
         if (health != null) health.Died += OnDied;
+    }
+
+    void SetupAudio()
+    {
+        if (explosionSfx == null || explosionSfx.Length == 0)
+        {
+            explosionSfx = Resources.LoadAll<AudioClip>("Audio/Explosion");
+        }
+
+        // On the car root (not the rig, which can be torn down) so the one-shot
+        // survives; 2D so it lands at full volume under the pulled-back camera.
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.volume = 1f;
     }
 
     void OnDestroy()
@@ -95,12 +120,24 @@ public class DamageFx : MonoBehaviour
     {
         SetEmission(smoke, false);
         SetFires(false);
+        PlayExplosionSfx();
         if (explosion != null) { explosion.Clear(); explosion.Play(); }
         if (shockwave != null)
         {
             if (shockwaveCo != null) StopCoroutine(shockwaveCo);
             shockwaveCo = StartCoroutine(ShockwaveRoutine());
         }
+    }
+
+    void PlayExplosionSfx()
+    {
+        if (audioSource == null || explosionSfx == null || explosionSfx.Length == 0) return;
+
+        AudioClip clip = explosionSfx[Random.Range(0, explosionSfx.Length)];
+        if (clip == null) return;
+
+        audioSource.pitch = 1f + Random.Range(-explosionPitchJitter, explosionPitchJitter);
+        audioSource.PlayOneShot(clip, explosionVolume);
     }
 
     IEnumerator ShockwaveRoutine()

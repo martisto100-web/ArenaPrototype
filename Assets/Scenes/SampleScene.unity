@@ -243,6 +243,11 @@ MonoBehaviour:
   fireRate: 0.25
   aimJoystick: {fileID: 1257424652}
   fireDeadzone: 0.3
+  fireShots: []
+  fireVolume: 0.55
+  firePitch: 1
+  firePitchJitter: 0.06
+  fireVolumeJitter: 0.12
 --- !u!114 &90553703
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -482,6 +487,9 @@ MonoBehaviour:
   shockwaveRadius: 6
   shockwaveDuration: 0.4
   shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
+  explosionSfx: []
+  explosionVolume: 1
+  explosionPitchJitter: 0.05
 --- !u!1 &148833470
 GameObject:
   m_ObjectHideFlags: 0
@@ -828,7 +836,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
   target: {fileID: 90553708}
-  offset: {x: 0, y: 28, z: -36}
+  offset: {x: 0, y: 28, z: -25}
   smoothSpeed: 5
 --- !u!1 &410087039
 GameObject:
@@ -2012,6 +2020,11 @@ MonoBehaviour:
   fireRate: 0.25
   aimJoystick: {fileID: 0}
   fireDeadzone: 0.3
+  fireShots: []
+  fireVolume: 0.55
+  firePitch: 1
+  firePitchJitter: 0.06
+  fireVolumeJitter: 0.12
 --- !u!114 &1461479446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2203,6 +2216,9 @@ MonoBehaviour:
   shockwaveRadius: 6
   shockwaveDuration: 0.4
   shockwaveColor: {r: 0.75, g: 0.75, b: 0.8, a: 0.35}
+  explosionSfx: []
+  explosionVolume: 1
+  explosionPitchJitter: 0.05
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0
