@@ -21,6 +21,10 @@ public class Respawner : MonoBehaviour
     private Vector3 spawnPos;
     private Quaternion spawnRot;
 
+    // The car's original placement, cached in Awake. TestDummy pins to this.
+    public Vector3 SpawnPosition => spawnPos;
+    public Quaternion SpawnRotation => spawnRot;
+
     private Health health;
     private Rigidbody body;
     private Collider bodyCollider;
@@ -60,6 +64,7 @@ public class Respawner : MonoBehaviour
         Add(GetComponent<Weapon>());
         Add(GetComponent<EnemyDriverAI>());
         Add(GetComponent<PlayerInputRouter>());
+        Add(GetComponent<EngineAudio>()); // OnDisable silences the engine loops while dead
         return list.ToArray();
     }
 

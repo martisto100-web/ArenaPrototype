@@ -219,8 +219,9 @@ GameObject:
   - component: {fileID: 90553711}
   - component: {fileID: 90553713}
   - component: {fileID: 90553714}
+  - component: {fileID: 90553715}
   m_Layer: 3
-  m_Name: PlayerCar
+  m_Name: Wraith
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -490,6 +491,25 @@ MonoBehaviour:
   explosionSfx: []
   explosionVolume: 1
   explosionPitchJitter: 0.05
+--- !u!114 &90553715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 90553701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5e3e1b7b2773c43a3bd3cc7ae75c46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EngineAudio
+  engineLoop: {fileID: 0}
+  idleVolume: 0.45
+  idlePitch: 1
+  maxVolume: 0.7
+  maxPitch: 1.7
+  responseSpeed: 6
+  spatialMaxDistance: 45
 --- !u!1 &148833470
 GameObject:
   m_ObjectHideFlags: 0
@@ -978,6 +998,7 @@ GameObject:
   - component: {fileID: 536706259}
   - component: {fileID: 536706262}
   - component: {fileID: 536706263}
+  - component: {fileID: 536706264}
   m_Layer: 0
   m_Name: GameDirector
   m_TagString: Untagged
@@ -1065,6 +1086,18 @@ MonoBehaviour:
   edgeMargin: 64
   playerTag: Player
   rescanInterval: 0.5
+--- !u!114 &536706264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78dd4732758985845aee244f5c31c12d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ModeMenu
 --- !u!1 &628164967
 GameObject:
   m_ObjectHideFlags: 0
@@ -1929,6 +1962,7 @@ GameObject:
   - component: {fileID: 1461479452}
   - component: {fileID: 1461479453}
   - component: {fileID: 1461479454}
+  - component: {fileID: 1461479455}
   m_Layer: 3
   m_Name: EnemyCar
   m_TagString: Untagged
@@ -2219,6 +2253,25 @@ MonoBehaviour:
   explosionSfx: []
   explosionVolume: 1
   explosionPitchJitter: 0.05
+--- !u!114 &1461479455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1461479441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5e3e1b7b2773c43a3bd3cc7ae75c46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EngineAudio
+  engineLoop: {fileID: 0}
+  idleVolume: 0.45
+  idlePitch: 1
+  maxVolume: 0.7
+  maxPitch: 1.7
+  responseSpeed: 6
+  spatialMaxDistance: 45
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0

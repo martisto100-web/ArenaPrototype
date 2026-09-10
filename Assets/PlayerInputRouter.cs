@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// ATTACH THIS TO: the PlayerCar root (alongside CarController + Weapon).
+// ATTACH THIS TO: the Wraith / player-car root (alongside CarController + Weapon).
 // One IVehicleInput that the human uses on every platform:
 //   - Mobile build  -> the two on-screen VirtualJoysticks (kept for release).
 //   - PC / editor    -> WASD to move, mouse to aim, hold left mouse to fire.

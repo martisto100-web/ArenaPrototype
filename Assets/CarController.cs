@@ -21,6 +21,10 @@ public class CarController : MonoBehaviour
     private float currentSpeed = 0f;
     private IVehicleInput vehicleInput;
 
+    // Current forward speed after accel/decel smoothing. EngineAudio maps this to
+    // engine RPM; divide by moveSpeed for a 0..1 "throttle load".
+    public float CurrentSpeed => currentSpeed;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();

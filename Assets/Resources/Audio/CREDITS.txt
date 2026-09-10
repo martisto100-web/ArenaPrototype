@@ -28,6 +28,20 @@ BulletImpact/impact_1..3.ogg  -  enemy bullet hitting the player's car (Projecti
   The settings menu will show this as GameSettings.BulletHitVolumePercent, a
   0..100 slider (100 = 0.4); 0.23 default reads as ~57.5.
 
+Engine/engine_loop.ogg  -  idle engine loop (EngineAudio.cs)
+  Source: "062790_Car engine idle" by freesound_community, from Pixabay
+    https://pixabay.com/sound-effects/city-062790-car-engine-idle-82134/
+  License: Pixabay Content License (same terms as the rest).
+  ffmpeg: ~2.1s wrap-blended loop from the middle of the (dead-steady) recording,
+  highpass 25 / lowpass 7k, gentle compression + limiter, normalised hot
+  (~-0.7 dBFS peak / -6 dBFS mean - the raw idle was quiet). EngineAudio loops it
+  and lerps its pitch 1.0 (idle) -> maxPitch 1.7 (full throttle) with the car's
+  speed, so the same tone sweeps up on acceleration and back down on
+  deceleration. In-game volume idleVolume 0.45 -> maxVolume 0.7 (a settings-menu
+  slider will scale this later).
+  (Superseded engine attempts: "Car motor revving" 99317, "Car Engine" 372477
+  used as a two-clip crossfade and then a single pitched drone.)
+
 Explosion/explosion.ogg  -  elimination explosion (DamageFx.cs)
   Source: "Explosion FX" by SoundReality, from Pixabay (48 kHz source)
     https://pixabay.com/sound-effects/film-special-effects-explosion-fx-343683/
