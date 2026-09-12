@@ -858,6 +858,7 @@ MonoBehaviour:
   target: {fileID: 90553708}
   offset: {x: 0, y: 28, z: -25}
   smoothSpeed: 5
+  zoomOutMultiplier: 1.35
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1196,7 +1197,9 @@ MonoBehaviour:
   ctfDuration: 240
   gridlockDuration: 210
   gridlockSecondsPerPercent: 0.7
-  winBannerSeconds: 4
+  postMatchZoomDuration: 1.5
+  postMatchMenuDelay: 1
+  postMatchMaxWait: 6
 --- !u!114 &536706266
 MonoBehaviour:
   m_ObjectHideFlags: 0

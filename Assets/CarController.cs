@@ -22,6 +22,11 @@ public class CarController : MonoBehaviour
     // flag in Capture the Flag, and restores it to 1 on drop/score/death.
     [NonSerialized] public float speedMultiplier = 1f;
 
+    // false = normal. MatchModeManager sets this true after a match ends, so
+    // the car coasts to a stop under its own accel/decel curve instead of
+    // just freezing in place - input is ignored but FixedUpdate keeps running.
+    [NonSerialized] public bool inputLocked = false;
+
     private Rigidbody rb;
     private float currentSpeed = 0f;
     private IVehicleInput vehicleInput;
@@ -58,6 +63,7 @@ public class CarController : MonoBehaviour
 
     Vector2 GetMovementInput()
     {
+        if (inputLocked) return Vector2.zero;
         if (vehicleInput != null)
         {
             return vehicleInput.MoveInput;

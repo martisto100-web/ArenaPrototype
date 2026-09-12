@@ -18,7 +18,13 @@ using UnityEngine;
 // checked out without grinding out a real tie.
 // Kills/respawns themselves are still all MatchDirector / Respawner as always;
 // this only watches the score and owns the HUD text (drawn through ScreenFx),
-// Flag setup for CTF, and reading ControlZone occupancy for Gridlock.
+// Flag setup for CTF, reading ControlZone occupancy for Gridlock, and the
+// post-match cinematic every mode ends with: a "VICTORY"/"DEFEAT"/"DRAW"
+// banner (from the local player's own point of view - there's no networked
+// opponent to word it neutrally for yet), controls locked so the cars coast to
+// a natural stop and the camera eases back for a wider view, then a beat of
+// quiet before the mode-select menu reopens (standing in for a proper
+// post-match/loading flow, which doesn't exist yet).
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
@@ -37,17 +43,26 @@ public class MatchModeManager : MonoBehaviour
     public float gridlockDuration = 210f;         // 3.5 minutes
     public float gridlockSecondsPerPercent = 0.7f; // 1% per this many seconds a team holds the zone alone or contested
 
-    [Header("Post-match")]
-    public float winBannerSeconds = 4f;
+    [Header("Post-match sequence")]
+    public float postMatchZoomDuration = 1.5f; // how long the camera's pull-back takes
+    public float postMatchMenuDelay = 1f;      // the quiet beat after everything settles, before the menu reopens
+    public float postMatchMaxWait = 6f;        // safety cap - see Respawner.maxFallTime for the same idea
 
     public Mode CurrentMode { get; private set; } = Mode.None;
 
     private ScreenFx screenFx;
     private DeathZone deathZone;
     private ModeMenu modeMenu;
+    private MatchDirector matchDirector;
+    private CameraFollow cameraFollow;
 
     private Health playerHealth;
     private Health enemyHealth;
+    private CarController playerCar;
+    private CarController enemyCar;
+    private Weapon playerWeapon;
+    private Weapon enemyWeapon;
+    private EnemyDriverAI enemyAI;
     private Flag playerFlag;        // the Player team's own flag/base
     private Flag enemyFlag;         // the Enemy team's own flag/base
     private ControlZone controlZone;
@@ -67,6 +82,8 @@ public class MatchModeManager : MonoBehaviour
         screenFx = GetComponent<ScreenFx>();
         deathZone = GetComponent<DeathZone>();
         modeMenu = GetComponent<ModeMenu>();
+        matchDirector = GetComponent<MatchDirector>();
+        if (Camera.main != null) cameraFollow = Camera.main.GetComponent<CameraFollow>();
     }
 
     void OnDestroy() => Unsubscribe();
@@ -75,11 +92,29 @@ public class MatchModeManager : MonoBehaviour
     {
         playerHealth = null;
         enemyHealth = null;
+        playerCar = null;
+        enemyCar = null;
+        playerWeapon = null;
+        enemyWeapon = null;
+        enemyAI = null;
         foreach (TeamMember tm in FindObjectsByType<TeamMember>(FindObjectsSortMode.None))
         {
             Health h = tm.GetComponent<Health>();
             if (h == null) continue;
-            if (tm.team == Team.Player) playerHealth = h; else enemyHealth = h;
+
+            if (tm.team == Team.Player)
+            {
+                playerHealth = h;
+                playerCar = tm.GetComponent<CarController>();
+                playerWeapon = tm.GetComponent<Weapon>();
+            }
+            else
+            {
+                enemyHealth = h;
+                enemyCar = tm.GetComponent<CarController>();
+                enemyWeapon = tm.GetComponent<Weapon>();
+                enemyAI = tm.GetComponent<EnemyDriverAI>();
+            }
         }
 
         playerFlag = null;
@@ -101,6 +136,11 @@ public class MatchModeManager : MonoBehaviour
         StopAllCoroutines();
         Unsubscribe();
         FindCombatants();
+
+        // A new match always starts with full control and normal framing,
+        // regardless of what state the last match's end sequence left things in.
+        LockControls(false);
+        if (cameraFollow != null) cameraFollow.ResetZoomImmediate();
 
         CurrentMode = mode;
         matchRunning = mode != Mode.None;
@@ -281,9 +321,12 @@ public class MatchModeManager : MonoBehaviour
         suddenDeath = false;
         deathZone.Stop();
         Unsubscribe();
+        // Otherwise a car that died on the very last hit could pop back to
+        // life - and steal the countdown label - mid-cinematic.
+        if (matchDirector != null) matchDirector.CancelPendingRespawns();
 
-        screenFx.ShowMessage(winner == Team.Player ? "YOU WIN!" : "ENEMY WINS!");
-        StartCoroutine(ReturnToMenuAfter(winBannerSeconds));
+        screenFx.ShowMessage(winner == Team.Player ? "VICTORY!" : "DEFEAT!");
+        StartCoroutine(PlayEndSequence());
     }
 
     void EndMatchDraw()
@@ -292,9 +335,10 @@ public class MatchModeManager : MonoBehaviour
         suddenDeath = false;
         deathZone.Stop();
         Unsubscribe();
+        if (matchDirector != null) matchDirector.CancelPendingRespawns();
 
         screenFx.ShowMessage("DRAW!");
-        StartCoroutine(ReturnToMenuAfter(winBannerSeconds));
+        StartCoroutine(PlayEndSequence());
     }
 
     IEnumerator ClearBannerAfter(float seconds)
@@ -303,11 +347,47 @@ public class MatchModeManager : MonoBehaviour
         screenFx.HideCountdown();
     }
 
-    IEnumerator ReturnToMenuAfter(float seconds)
+    // Locks controls (cars coast to a stop under their own decel curve, guns
+    // fall silent) and pulls the camera back; once both cars have actually
+    // settled and the camera's done easing back (or postMatchMaxWait runs out
+    // as a safety net), holds for one quiet beat, then reopens the menu.
+    IEnumerator PlayEndSequence()
     {
-        yield return new WaitForSeconds(seconds);
+        LockControls(true);
+        if (cameraFollow != null) cameraFollow.ZoomOut(postMatchZoomDuration);
+
+        float waited = 0f;
+        while (waited < postMatchMaxWait)
+        {
+            bool cameraSettled = cameraFollow == null || !cameraFollow.IsZooming;
+            if (cameraSettled && CarSettled(playerCar) && CarSettled(enemyCar)) break;
+            waited += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(postMatchMenuDelay);
+
         screenFx.HideCountdown();
+        LockControls(false);
+        if (cameraFollow != null) cameraFollow.ResetZoomImmediate();
         if (modeMenu != null) modeMenu.OpenMenu();
+    }
+
+    // A disabled CarController means Respawner already froze this car (dead or
+    // mid drop-in) - nothing left to wait on either way.
+    static bool CarSettled(CarController car)
+    {
+        if (car == null || !car.enabled) return true;
+        return car.CurrentSpeed <= 0.05f;
+    }
+
+    void LockControls(bool locked)
+    {
+        if (playerCar != null) playerCar.inputLocked = locked;
+        if (enemyCar != null) enemyCar.inputLocked = locked;
+        if (playerWeapon != null) playerWeapon.enabled = !locked;
+        if (enemyWeapon != null) enemyWeapon.enabled = !locked;
+        if (enemyAI != null) enemyAI.enabled = !locked;
     }
 
     // ---- HUD ----

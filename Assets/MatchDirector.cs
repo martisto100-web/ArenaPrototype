@@ -5,7 +5,9 @@ using UnityEngine;
 // ATTACH THIS TO: an empty "GameDirector" object (with a ScreenFx alongside).
 // Watches every car that has a Respawner. On a death it plays the kill juice
 // (camera shake + screen flash), runs the on-screen respawn countdown, then
-// drops the car back in.
+// drops the car back in. CancelPendingRespawns() lets MatchModeManager cut
+// this short the instant a match ends, so a losing car can't pop back to life
+// (and hijack the shared countdown label) mid-victory-cinematic.
 [RequireComponent(typeof(ScreenFx))]
 public class MatchDirector : MonoBehaviour
 {
@@ -42,6 +44,16 @@ public class MatchDirector : MonoBehaviour
         {
             if (h != null) h.Died -= OnDied;
         }
+    }
+
+    // Stops any in-flight "Respawning in: N" countdown(s) dead and clears the
+    // shared-label flag, without touching the car itself - it stays exactly as
+    // dead/frozen as Respawner already left it. Safe to call even when nothing
+    // is pending.
+    public void CancelPendingRespawns()
+    {
+        StopAllCoroutines();
+        playerRespawning = false;
     }
 
     void OnDied(Health h)
