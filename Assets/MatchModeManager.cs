@@ -2,23 +2,28 @@ using System.Collections;
 using UnityEngine;
 
 // ATTACH THIS TO: the GameDirector object (alongside ModeMenu / ScreenFx).
-// Runs the two structured modes ModeMenu can start:
+// Runs the three structured modes ModeMenu can start:
 //   Deathmatch        - first team to killGoal eliminations wins; 5 min timer.
 //   Capture the Flag  - first team to captureGoal flag captures wins; 4 min timer.
-// In both, if nobody hits the goal before the timer runs out the team with more
-// eliminations wins (captures are CTF's win condition, kills are just its
-// tiebreaker); if THAT'S also tied, DeathZone sudden death decides it - first
-// car to go down loses. Also runs DeathZoneTest - a debug-only mode (ModeMenu's
-// "DeathZone Test" button) that drops straight into sudden death with no goal
-// or timer, so the zone can be checked out without grinding out a real tie.
+//   Zone Control      - first team to fill their OWN 0-100% bar to 100% wins;
+//                       3.5 min timer (working name - open to something better).
+// In Deathmatch/CTF, if nobody hits the goal before the timer runs out the team
+// with more eliminations wins (captures are CTF's win condition, kills are just
+// its tiebreaker); if THAT'S also tied, DeathZone sudden death decides it -
+// first car to go down loses. Zone Control has no tiebreaker: nobody at 100% at
+// the buzzer just means whoever has the higher percentage wins outright, and an
+// exact tie is a flat draw - it never hands off to DeathZone. Also runs
+// DeathZoneTest - a debug-only mode (ModeMenu's "DeathZone Test" button) that
+// drops straight into sudden death with no goal or timer, so the zone can be
+// checked out without grinding out a real tie.
 // Kills/respawns themselves are still all MatchDirector / Respawner as always;
-// this only watches the score and owns the HUD text (drawn through ScreenFx)
-// and Flag setup for CTF.
+// this only watches the score and owns the HUD text (drawn through ScreenFx),
+// Flag setup for CTF, and reading ControlZone occupancy for Zone Control.
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
 {
-    public enum Mode { None, Deathmatch, CaptureTheFlag, DeathZoneTest }
+    public enum Mode { None, Deathmatch, CaptureTheFlag, ZoneControl, DeathZoneTest }
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
@@ -27,6 +32,10 @@ public class MatchModeManager : MonoBehaviour
     [Header("Capture The Flag")]
     public int ctfCaptureGoal = 3;
     public float ctfDuration = 240f;
+
+    [Header("Zone Control")]
+    public float zoneControlDuration = 210f;         // 3.5 minutes
+    public float zoneControlSecondsPerPercent = 0.7f; // 1% per this many seconds a team holds the zone alone or contested
 
     [Header("Post-match")]
     public float winBannerSeconds = 4f;
@@ -39,13 +48,16 @@ public class MatchModeManager : MonoBehaviour
 
     private Health playerHealth;
     private Health enemyHealth;
-    private Flag playerFlag; // the Player team's own flag/base
-    private Flag enemyFlag;  // the Enemy team's own flag/base
+    private Flag playerFlag;        // the Player team's own flag/base
+    private Flag enemyFlag;         // the Enemy team's own flag/base
+    private ControlZone controlZone;
 
     private int playerKills;
     private int enemyKills;
     private int playerCaptures;
     private int enemyCaptures;
+    private float playerZonePercent;
+    private float enemyZonePercent;
     private float timeRemaining;
     private bool matchRunning;
     private bool suddenDeath;
@@ -78,6 +90,8 @@ public class MatchModeManager : MonoBehaviour
         }
         if (playerFlag != null) playerFlag.SetOther(enemyFlag);
         if (enemyFlag != null) enemyFlag.SetOther(playerFlag);
+
+        controlZone = FindFirstObjectByType<ControlZone>(FindObjectsInactive.Include);
     }
 
     // ---- called by ModeMenu on every mode pick (including switching to 1v1 / Test / None) ----
@@ -92,9 +106,11 @@ public class MatchModeManager : MonoBehaviour
         matchRunning = mode != Mode.None;
         suddenDeath = false;
         playerKills = enemyKills = playerCaptures = enemyCaptures = 0;
+        playerZonePercent = enemyZonePercent = 0f;
         deathZone.Stop();
 
         SetFlagsActive(mode == Mode.CaptureTheFlag);
+        SetZoneActive(mode == Mode.ZoneControl);
 
         if (!matchRunning)
         {
@@ -122,7 +138,13 @@ public class MatchModeManager : MonoBehaviour
         }
         else
         {
-            timeRemaining = mode == Mode.Deathmatch ? deathmatchDuration : ctfDuration;
+            switch (mode)
+            {
+                case Mode.Deathmatch: timeRemaining = deathmatchDuration; break;
+                case Mode.CaptureTheFlag: timeRemaining = ctfDuration; break;
+                case Mode.ZoneControl: timeRemaining = zoneControlDuration; break;
+                default: timeRemaining = 0f; break;
+            }
         }
 
         UpdateHud();
@@ -132,6 +154,11 @@ public class MatchModeManager : MonoBehaviour
     {
         if (playerFlag != null) playerFlag.gameObject.SetActive(on);
         if (enemyFlag != null) enemyFlag.gameObject.SetActive(on);
+    }
+
+    void SetZoneActive(bool on)
+    {
+        if (controlZone != null) controlZone.gameObject.SetActive(on);
     }
 
     void Unsubscribe()
@@ -148,16 +175,38 @@ public class MatchModeManager : MonoBehaviour
     {
         if (!matchRunning) return;
 
+        if (CurrentMode == Mode.ZoneControl)
+        {
+            TickZoneControl();
+            if (!matchRunning) return; // a team may have just hit 100%
+        }
+
         if (!suddenDeath)
         {
             timeRemaining -= Time.deltaTime;
             if (timeRemaining <= 0f)
             {
                 timeRemaining = 0f;
-                ResolveAtBuzzer();
+                if (CurrentMode == Mode.ZoneControl) ResolveZoneControlAtBuzzer();
+                else ResolveAtBuzzer();
             }
         }
         UpdateHud();
+    }
+
+    // Each team's bar fills at its own pace - 1% per zoneControlSecondsPerPercent
+    // while at least one of their cars is in the zone - completely independent
+    // of whether the enemy is also inside; both can climb at once.
+    void TickZoneControl()
+    {
+        if (controlZone == null) return;
+
+        float gain = Time.deltaTime / Mathf.Max(0.01f, zoneControlSecondsPerPercent);
+        if (controlZone.PlayerInside) playerZonePercent = Mathf.Min(100f, playerZonePercent + gain);
+        if (controlZone.EnemyInside) enemyZonePercent = Mathf.Min(100f, enemyZonePercent + gain);
+
+        if (playerZonePercent >= 100f) { EndMatch(Team.Player); return; }
+        if (enemyZonePercent >= 100f) { EndMatch(Team.Enemy); return; }
     }
 
     // ---- events ----
@@ -216,6 +265,16 @@ public class MatchModeManager : MonoBehaviour
         StartCoroutine(ClearBannerAfter(2.5f));
     }
 
+    // Zone Control's buzzer rule is simpler than Deathmatch/CTF's: higher
+    // percentage just wins outright, and an exact tie is a flat draw - this
+    // mode never hands off to DeathZone.
+    void ResolveZoneControlAtBuzzer()
+    {
+        if (playerZonePercent > enemyZonePercent) EndMatch(Team.Player);
+        else if (enemyZonePercent > playerZonePercent) EndMatch(Team.Enemy);
+        else EndMatchDraw();
+    }
+
     void EndMatch(Team winner)
     {
         matchRunning = false;
@@ -224,6 +283,17 @@ public class MatchModeManager : MonoBehaviour
         Unsubscribe();
 
         screenFx.ShowMessage(winner == Team.Player ? "YOU WIN!" : "ENEMY WINS!");
+        StartCoroutine(ReturnToMenuAfter(winBannerSeconds));
+    }
+
+    void EndMatchDraw()
+    {
+        matchRunning = false;
+        suddenDeath = false;
+        deathZone.Stop();
+        Unsubscribe();
+
+        screenFx.ShowMessage("DRAW!");
         StartCoroutine(ReturnToMenuAfter(winBannerSeconds));
     }
 
@@ -252,6 +322,9 @@ public class MatchModeManager : MonoBehaviour
                 break;
             case Mode.CaptureTheFlag:
                 score = $"YOU {playerCaptures} - {enemyCaptures} ENEMY   (first to {ctfCaptureGoal})   kills {playerKills}-{enemyKills}";
+                break;
+            case Mode.ZoneControl:
+                score = $"YOU {Mathf.FloorToInt(playerZonePercent)}% - {Mathf.FloorToInt(enemyZonePercent)}% ENEMY   (first to 100%)";
                 break;
             default: // DeathZoneTest
                 score = "DEATH ZONE TEST";

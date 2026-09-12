@@ -3,18 +3,19 @@
 A twin-stick **vehicle arena shooter** for mobile (iOS/Android). Early prototype.
 The player's car is the **Wraith** (a sports car; scene object `Wraith`, tag `Player`).
 
-`ModeMenu` offers five modes: **Deathmatch** and **Capture the Flag** (both run
-through `MatchModeManager` — structured matches with a goal, a timer, and a
-`DeathZone` sudden-death tiebreaker), **1v1 Arena** (untimed free play, enemy AI
-as normal, no goal/HUD), **Test Arena** (the enemy becomes an inert
-`TestDummy` — 100 HP, never moves or shoots, still explodes + runs the "Enemy
-respawns in" countdown — for solo testing of movement / weapons / audio), or
-**DeathZone Test** (debug: drops straight into sudden death against the live
-AI, no goal/timer, for checking out the zone without grinding out a real tie).
-It shows on Play and re-opens on **ESC / Android back** any time (time + audio
-frozen); you can switch modes on the fly, or Resume / ESC-again to stay.
-`MatchModeManager` also reopens it itself a few seconds after a match ends
-(Deathmatch/CTF/DeathZone Test all count).
+`ModeMenu` offers six modes: **Deathmatch**, **Capture the Flag**, and **Zone
+Control** (working name — all three run through `MatchModeManager`, structured
+matches with a goal, a timer, and — for the first two — a `DeathZone`
+sudden-death tiebreaker), **1v1 Arena** (untimed free play, enemy AI as normal,
+no goal/HUD), **Test Arena** (the enemy becomes an inert `TestDummy` — 100 HP,
+never moves or shoots, still explodes + runs the "Enemy respawns in" countdown
+— for solo testing of movement / weapons / audio), or **DeathZone Test**
+(debug: drops straight into sudden death against the live AI, no goal/timer,
+for checking out the zone without grinding out a real tie). It shows on Play
+and re-opens on **ESC / Android back** any time (time + audio frozen); you can
+switch modes on the fly, or Resume / ESC-again to stay. `MatchModeManager` also
+reopens it itself a few seconds after a match ends (all four structured/debug
+modes count).
 
 - **Deathmatch:** first team to `deathmatchKillGoal` (10) eliminations wins;
   `deathmatchDuration` (300s) timer. Nobody at the goal when it expires → more
@@ -32,6 +33,16 @@ frozen); you can switch modes on the fly, or Resume / ESC-again to stay.
   (240s) timer. Nobody at the goal when it
   expires → more *eliminations* wins (kills are CTF's tiebreaker, not
   captures); tied on kills too → `DeathZone` sudden death.
+- **Zone Control (working name):** a single `ControlZone` sits at the arena
+  centre — a glowing ground disc, code-generated (no art), neutral until a car
+  drives in, then tints solid blue/red for whichever team is inside, or splits
+  half-and-half when both are. Each team has its own independent 0-100%
+  `zoneControlSecondsPerPercent`-paced bar (1% per 0.7s while ≥1 of their cars
+  is in the `radius` (6), paused — never reversed — the instant none of theirs
+  are; both bars can climb at once, it's not contested/shared). First to 100%
+  wins immediately. `zoneControlDuration` (210s = 3.5 min) timer; nobody at
+  100% when it expires → higher percentage wins outright, and an *exact* tie is
+  a flat draw — this mode never hands off to `DeathZone`.
 - **DeathZone sudden death:** a circular safe zone shrinks from covering the
   whole arena to nothing over `shrinkDuration` (20s); anything caught outside
   it takes escalating damage per second (1 → 3 at 5s → 5 at 10s → 7 at 15s,
@@ -64,10 +75,11 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | `Respawner.cs` | `Wraith` / `EnemyCar` (needs `Health` + `Rigidbody`) | Sets `Health.destroyOnDeath = false`. On death: disables controls (`CarController`/`Weapon`/`EnemyDriverAI`/`PlayerInputRouter`/`EngineAudio`), collider, renderers, hides the health bar, freezes the body. `Respawn()` (called by `MatchDirector`) revives, drops the car in from `dropHeight` (7) with `dropSpeed` (12) downward velocity; controls return the instant a downward raycast says it's within `landClearance` of a surface (`maxFallTime` is a safety cap) — no dead time on the ground. |
 | `MatchDirector.cs` | `GameDirector` (needs `ScreenFx`) | Subscribes to every `Health.Died` on a car with a `Respawner`. On death → (if enabled in `GameSettings`) camera `Shake` + `ScreenFx.Flash`, then counts `respawnSeconds`→1 on screen ("Respawning in:" / "Enemy respawns in:"), then `Respawner.Respawn()` + a small landing shake. Player's countdown owns the shared label. |
 | `ScreenFx.cs` | `GameDirector` | Builds a screen-space overlay at runtime: full-screen `Flash()` quad + centred `ShowCountdown(label,n)` / `ShowMessage(text)` label (legacy `Text`, `LegacyRuntime.ttf`) + a persistent top-of-screen `SetHud(text)` line (`MatchModeManager`'s score/timer readout). |
-| `ModeMenu.cs` | `GameDirector` (needs `MatchModeManager`) | Runtime uGUI overlay (same style as `ScreenFx`): title "WRAITH" + **Deathmatch** / **Capture the Flag** / **1v1 Arena** / **Test Arena** / **DeathZone Test** / **Resume** buttons. Opens on `Awake` and on **ESC / Android back** (`Input.GetKeyDown(KeyCode.Escape)`), and can be reopened by `MatchModeManager` via `OpenMenu()`; each open freezes `Time.timeScale` + `AudioListener` and holds the enemy AI disabled. A pick calls `ApplyMode` (every mode but Test → `Detach` any `TestDummy` + enable the AI; Test → disable the AI + `AddComponent<TestDummy>()`) and `MatchModeManager.StartMatch(...)` (`None` for 1v1/Test). Persists (not destroyed) so it can re-open. Resume shows only once a mode is chosen. |
-| `MatchModeManager.cs` | `GameDirector` (needs `ScreenFx` + `DeathZone`) | Runs Deathmatch / Capture the Flag / DeathZone Test: owns the kill/capture tallies, the match timer, the HUD text (via `ScreenFx.SetHud`), the goal/timer win check, and handing off to `DeathZone` for sudden death when tied at the buzzer (or immediately, for the debug DeathZone Test mode — no goal/timer, just sudden death from the first frame). Finds the two cars + two `Flag`s by `TeamMember`/`owningTeam` on `StartMatch`, wires the Flags to each other, and (de)activates them per mode. Shows a "YOU WIN!" / "ENEMY WINS!" banner then calls `ModeMenu.OpenMenu()` after `winBannerSeconds` (4s). Doesn't touch respawn logic — `MatchDirector`/`Respawner` keep doing that regardless of mode. |
-| `DeathZone.cs` | `GameDirector` | Sudden-death hazard, idle until `MatchModeManager` calls `BeginShrinking()`. See "Deathmatch" section above for the shrink/damage curve. `Stop()` hides it and resets. All-code visual (annulus mesh with a per-vertex outer/edge color gradient + a ring of ember `ParticleSystem`s), same no-art approach as `DamageFx`/`HealthBar`. |
+| `ModeMenu.cs` | `GameDirector` (needs `MatchModeManager`) | Runtime uGUI overlay (same style as `ScreenFx`): title "WRAITH" + **Deathmatch** / **Capture the Flag** / **Zone Control** / **1v1 Arena** / **Test Arena** / **DeathZone Test** / **Resume** buttons. Opens on `Awake` and on **ESC / Android back** (`Input.GetKeyDown(KeyCode.Escape)`), and can be reopened by `MatchModeManager` via `OpenMenu()`; each open freezes `Time.timeScale` + `AudioListener` and holds the enemy AI disabled. A pick calls `ApplyMode` (every mode but Test → `Detach` any `TestDummy` + enable the AI; Test → disable the AI + `AddComponent<TestDummy>()`) and `MatchModeManager.StartMatch(...)` (`None` for 1v1/Test). Persists (not destroyed) so it can re-open. Resume shows only once a mode is chosen. |
+| `MatchModeManager.cs` | `GameDirector` (needs `ScreenFx` + `DeathZone`) | Runs Deathmatch / Capture the Flag / Zone Control / DeathZone Test: owns the kill/capture/zone-percent tallies, the match timer, the HUD text (via `ScreenFx.SetHud`), the goal/timer win check, and (Deathmatch/CTF only) handing off to `DeathZone` for sudden death when tied at the buzzer (or immediately, for the debug DeathZone Test mode). Finds the two cars, two `Flag`s, and the `ControlZone` by type on `StartMatch`, wires the Flags to each other, and (de)activates the Flags/`ControlZone` per mode. Shows a "YOU WIN!" / "ENEMY WINS!" / "DRAW!" banner then calls `ModeMenu.OpenMenu()` after `winBannerSeconds` (4s). Doesn't touch respawn logic — `MatchDirector`/`Respawner` keep doing that regardless of mode. |
+| `DeathZone.cs` | `GameDirector` | Sudden-death hazard, idle until `MatchModeManager` calls `BeginShrinking()`. See "Deathmatch" section above for the shrink/damage curve. `Stop()` hides it and resets. All-code visual (annulus mesh with a per-vertex outer/edge color gradient + a ring of ember `ParticleSystem`s), same no-art approach as `DamageFx`/`HealthBar`. Not used by Zone Control. |
 | `Flag.cs` | an empty base object per team (added by the CTF setup) | One team's flag + base. `owningTeam` says whose base it is; only the *other* team can pick it up (`OnTriggerEnter`, needs `CarController`+`TeamMember`, blocked while `Respawner.IsDead`, a drop is in progress, or `recaptureLockout` is running). While carried it follows the carrier and sets `CarController.speedMultiplier`; reaching `captureRadius` of the other `Flag`'s home (found via `SetOther`, wired by `MatchModeManager`) fires `Captured` and snaps home with a `recaptureLockout`. A car dying calls `DropIfCarriedBy` (from `MatchModeManager`'s death handlers), which drops the flag right there — inert (not pickable) for `dropDuration`, its pole+cloth (`visual`) blinking at a rate that ramps from `blinkStartInterval` to `blinkEndInterval` — then auto-returns home with no lockout. `OnDisable`/`OnEnable` reset it (including any in-progress drop) cleanly when `MatchModeManager` toggles it off/on between modes. |
+| `ControlZone.cs` | an empty object at the arena centre (added by the Zone Control setup) | The Zone Control point. Builds a glowing ground disc at runtime (two independently-tintable half-disc meshes, no art) and, every frame, checks each team's occupancy (`PlayerInside`/`EnemyInside`) via a simple in-`radius` distance check against every live, non-dead `TeamMember`. Neutral when empty, solid team colour when only one side is inside, split half-and-half when both are. Owns no scoring — `MatchModeManager` reads the occupancy flags to run each team's independent capture-percent bar. `OnEnable` resets occupancy/visual cleanly when toggled on for a new match. |
 | `TestDummy.cs` | added at runtime to an `EnemyCar` by `ModeMenu` | Turns the enemy into an inert practice target: every frame disables `EnemyDriverAI` / `CarController` / `Weapon` / `EngineAudio` (re-killing them after a `Respawner` respawn) and, while fully alive, pins the body at `Respawner.SpawnPosition`. `Health` / `Respawner` / `DamageFx` / `HealthBar` untouched, so it still blows up with the same FX and runs the "Enemy respawns in" 5s countdown. `Detach()` restores the controls + removes itself (used when switching back to 1v1). |
 | `GameSettings.cs` | — (static) | `ScreenShakeOnElimination` / `ScreenFlashOnElimination` bools (default on) + `BulletHitVolume` float (raw AudioSource volume, default 0.23, clamped `0..BulletHitVolumeMax` = 0.4) — gameplay reads this; the menu binds `BulletHitVolumePercent` (0..100, 100 = max, ~57.5 default), slider labelled `BulletHitVolumeLabel` ("Projectile Impact Volume"). `PlayerPrefs`-backed. No settings-menu UI yet — these are the hooks a menu will flip. |
 | `DamageFx.cs` | a car root with `Health` | Runtime particle FX (all code-generated, no art): smoke below `smokeBelow` (0.5) HP, flames below `fireBelow` (0.3) — `flameCount` tufts scattered at random spots over the car (`flameArea` half-extents), each a random size/rate; and on `Health.Died` an explosion burst + an expanding translucent-grey shockwave dome (`shockwaveRadius`/`Duration`/`Color`) + the `explosionSfx` clip (~3.6s, smooth baked-in fade-out) on a runtime-added 2D `AudioSource` on the car root (`explosionVolume` 1, `explosionPitchJitter` 0); `explosionSfx` auto-loads from `Resources/Audio/Explosion` if left empty. FX rig follows the car unparented but copies its rotation so the flames stay car-relative. |
@@ -86,9 +98,10 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
   - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as the Wraith but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar` + `Respawner` + `DamageFx` + `EngineAudio`; child `FirePoint`. In **Test Arena** mode `ModeMenu` adds a `TestDummy` here.
   - `GameDirector` — empty; `MatchDirector` + `ScreenFx` + `KillFloor` + `OffscreenMarkers` + `ModeMenu` + `MatchModeManager` + `DeathZone`.
   - `PlayerFlag` (`owningTeam = Player`, near the Wraith's spawn) / `EnemyFlag` (`owningTeam = Enemy`, near the EnemyCar's spawn) — Capture the Flag's two bases; `Flag` builds its own pole/cloth/base-pad visual at runtime. Active only while Capture the Flag is the running mode (`MatchModeManager` toggles them).
+  - `ControlZone` at the arena centre `(0, 0, 0)` — Zone Control's single capture point; `ControlZone` builds its own glowing ground-disc visual at runtime. Active only while Zone Control is the running mode.
   - `Arena_Wall_N/S/E/W` — invisible BoxCollider boundary walls at the Plane edges (±25.5), so cars can't drive off. Some future arenas will omit these (falling = a hazard, caught by `KillFloor`).
   - `Canvas/movejoystick bg` + `aimjoystick bg` — the two `VirtualJoystick`s, each also carrying a `JoystickSkin` (arrows / bullet glyph).
-  - Four `Cube`s — static obstacles (BoxCollider, no team/health).
+  - Four `Cube`s at `(0,1,±25)` / `(±25,1,0)`, scaled long and thin (`50×2×1` / `1×2×50`) — the *visible* wall panels sitting right on top of the invisible `Arena_Wall_N/S/E/W` colliders, not obstacles in the middle of the play field (the docs used to describe these as scattered mid-arena obstacles — that's stale; the centre of the arena is clear, which is exactly where `ControlZone` now sits).
   - `Plane` is 50×50 world units centred on origin (playable area ≈ x/z ∈ [-25, 25]). Square for now; arenas will become rectangular later.
 - **Physics layers:** both cars are on `Player` (3), bullets on `Projectiles` (6). The Layer Collision Matrix is left fully enabled — `Projectile.cs` filters friendly/self hits by `Team` in code, so don't disable Projectiles↔anything or bullets stop registering.
 - `Assets/Materials/` — runtime materials (`EnemyCar.mat`).
