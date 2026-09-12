@@ -19,7 +19,7 @@ public class MatchModeManager : MonoBehaviour
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
-    public float deathmatchDuration = 180f;
+    public float deathmatchDuration = 300f;
 
     [Header("Capture The Flag")]
     public int ctfCaptureGoal = 3;

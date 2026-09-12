@@ -1188,7 +1188,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MatchModeManager
   deathmatchKillGoal: 10
-  deathmatchDuration: 180
+  deathmatchDuration: 300
   ctfCaptureGoal: 3
   ctfDuration: 240
   winBannerSeconds: 4

@@ -15,7 +15,7 @@ frozen); you can switch modes on the fly, or Resume / ESC-again to stay.
 match ends.
 
 - **Deathmatch:** first team to `deathmatchKillGoal` (10) eliminations wins;
-  `deathmatchDuration` (180s) timer. Nobody at the goal when it expires → more
+  `deathmatchDuration` (300s) timer. Nobody at the goal when it expires → more
   kills wins; tied on kills too → `DeathZone` sudden death.
 - **Capture the Flag:** each team's `Flag` sits at its own base (built at
   runtime — pole + waving cloth + a translucent base-pad marking the capture
