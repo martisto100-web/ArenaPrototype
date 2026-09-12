@@ -1020,6 +1020,9 @@ MonoBehaviour:
   captureRadius: 3
   carrierSpeedPenalty: 0.35
   recaptureLockout: 5
+  dropDuration: 6
+  blinkStartInterval: 0.5
+  blinkEndInterval: 0.08
   carryOffset: {x: 0, y: 2.4, z: 0}
   waveSpeed: 3
   waveAngle: 12
@@ -2432,6 +2435,9 @@ MonoBehaviour:
   captureRadius: 3
   carrierSpeedPenalty: 0.35
   recaptureLockout: 5
+  dropDuration: 6
+  blinkStartInterval: 0.5
+  blinkEndInterval: 0.08
   carryOffset: {x: 0, y: 2.4, z: 0}
   waveSpeed: 3
   waveAngle: 12
