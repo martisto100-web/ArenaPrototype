@@ -1194,8 +1194,8 @@ MonoBehaviour:
   deathmatchDuration: 300
   ctfCaptureGoal: 3
   ctfDuration: 240
-  zoneControlDuration: 210
-  zoneControlSecondsPerPercent: 0.7
+  gridlockDuration: 210
+  gridlockSecondsPerPercent: 0.7
   winBannerSeconds: 4
 --- !u!114 &536706266
 MonoBehaviour:

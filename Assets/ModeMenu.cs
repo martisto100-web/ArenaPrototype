@@ -10,11 +10,11 @@ using UnityEngine.UI;
 //   "Capture the Flag"  - MatchModeManager's structured mode: first to 3 flag
 //                         captures (4 min timer), tiebreak on kills then
 //                         DeathZone sudden death.
-//   "Zone Control"      - MatchModeManager's structured mode (working name):
-//                         each team fills their own 0-100% bar just by having
-//                         a car in the centre ControlZone; first to 100% wins
-//                         (3.5 min timer), higher % at the buzzer wins, exact
-//                         tie is a flat draw - no DeathZone for this one.
+//   "Gridlock"          - MatchModeManager's structured mode: each team fills
+//                         their own 0-100% bar just by having a car in the
+//                         centre ControlZone; first to 100% wins (3.5 min
+//                         timer), higher % at the buzzer wins, exact tie is a
+//                         flat draw - no DeathZone for this one.
 //   "1v1 Arena"         - untimed free play against the live AI, no goal/HUD.
 //   "Test Arena"        - the enemy car becomes an inert TestDummy: 100 HP,
 //                         never moves or shoots, still explodes with the same
@@ -27,11 +27,11 @@ using UnityEngine.UI;
 // the enemy AI is held disabled so it can't fire into the frozen scene.
 // "Resume" (or ESC again) closes without switching, once a mode is already
 // running. MatchModeManager also reopens this menu itself a few seconds after
-// a match ends (Deathmatch/CTF/Zone Control/DeathZone Test all count).
+// a match ends (Deathmatch/CTF/Gridlock/DeathZone Test all count).
 [RequireComponent(typeof(MatchModeManager))]
 public class ModeMenu : MonoBehaviour
 {
-    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, ZoneControl, DeathZoneTest }
+    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, Gridlock, DeathZoneTest }
 
     private GameObject canvasGO;
     private GameObject resumeButton;
@@ -104,7 +104,7 @@ public class ModeMenu : MonoBehaviour
         {
             case Mode.Deathmatch: return MatchModeManager.Mode.Deathmatch;
             case Mode.CaptureTheFlag: return MatchModeManager.Mode.CaptureTheFlag;
-            case Mode.ZoneControl: return MatchModeManager.Mode.ZoneControl;
+            case Mode.Gridlock: return MatchModeManager.Mode.Gridlock;
             case Mode.DeathZoneTest: return MatchModeManager.Mode.DeathZoneTest;
             default: return MatchModeManager.Mode.None; // Arena1v1 / Test - free play, no structured match
         }
@@ -172,7 +172,7 @@ public class ModeMenu : MonoBehaviour
 
         MakeButton("Deathmatch", canvasGO.transform, new Vector2(0f, 260f), () => Pick(Mode.Deathmatch));
         MakeButton("Capture the Flag", canvasGO.transform, new Vector2(0f, 148f), () => Pick(Mode.CaptureTheFlag));
-        MakeButton("Zone Control", canvasGO.transform, new Vector2(0f, 36f), () => Pick(Mode.ZoneControl));
+        MakeButton("Gridlock", canvasGO.transform, new Vector2(0f, 36f), () => Pick(Mode.Gridlock));
         MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, -76f), () => Pick(Mode.Arena1v1));
         MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -188f), () => Pick(Mode.Test));
         MakeButton("DeathZone Test", canvasGO.transform, new Vector2(0f, -300f), () => Pick(Mode.DeathZoneTest));

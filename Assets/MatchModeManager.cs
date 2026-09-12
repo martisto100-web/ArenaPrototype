@@ -5,25 +5,25 @@ using UnityEngine;
 // Runs the three structured modes ModeMenu can start:
 //   Deathmatch        - first team to killGoal eliminations wins; 5 min timer.
 //   Capture the Flag  - first team to captureGoal flag captures wins; 4 min timer.
-//   Zone Control      - first team to fill their OWN 0-100% bar to 100% wins;
-//                       3.5 min timer (working name - open to something better).
+//   Gridlock          - first team to fill their OWN 0-100% bar to 100% wins;
+//                       3.5 min timer.
 // In Deathmatch/CTF, if nobody hits the goal before the timer runs out the team
 // with more eliminations wins (captures are CTF's win condition, kills are just
 // its tiebreaker); if THAT'S also tied, DeathZone sudden death decides it -
-// first car to go down loses. Zone Control has no tiebreaker: nobody at 100% at
-// the buzzer just means whoever has the higher percentage wins outright, and an
+// first car to go down loses. Gridlock has no tiebreaker: nobody at 100% at the
+// buzzer just means whoever has the higher percentage wins outright, and an
 // exact tie is a flat draw - it never hands off to DeathZone. Also runs
 // DeathZoneTest - a debug-only mode (ModeMenu's "DeathZone Test" button) that
 // drops straight into sudden death with no goal or timer, so the zone can be
 // checked out without grinding out a real tie.
 // Kills/respawns themselves are still all MatchDirector / Respawner as always;
 // this only watches the score and owns the HUD text (drawn through ScreenFx),
-// Flag setup for CTF, and reading ControlZone occupancy for Zone Control.
+// Flag setup for CTF, and reading ControlZone occupancy for Gridlock.
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
 {
-    public enum Mode { None, Deathmatch, CaptureTheFlag, ZoneControl, DeathZoneTest }
+    public enum Mode { None, Deathmatch, CaptureTheFlag, Gridlock, DeathZoneTest }
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
@@ -33,9 +33,9 @@ public class MatchModeManager : MonoBehaviour
     public int ctfCaptureGoal = 3;
     public float ctfDuration = 240f;
 
-    [Header("Zone Control")]
-    public float zoneControlDuration = 210f;         // 3.5 minutes
-    public float zoneControlSecondsPerPercent = 0.7f; // 1% per this many seconds a team holds the zone alone or contested
+    [Header("Gridlock")]
+    public float gridlockDuration = 210f;         // 3.5 minutes
+    public float gridlockSecondsPerPercent = 0.7f; // 1% per this many seconds a team holds the zone alone or contested
 
     [Header("Post-match")]
     public float winBannerSeconds = 4f;
@@ -110,7 +110,7 @@ public class MatchModeManager : MonoBehaviour
         deathZone.Stop();
 
         SetFlagsActive(mode == Mode.CaptureTheFlag);
-        SetZoneActive(mode == Mode.ZoneControl);
+        SetZoneActive(mode == Mode.Gridlock);
 
         if (!matchRunning)
         {
@@ -142,7 +142,7 @@ public class MatchModeManager : MonoBehaviour
             {
                 case Mode.Deathmatch: timeRemaining = deathmatchDuration; break;
                 case Mode.CaptureTheFlag: timeRemaining = ctfDuration; break;
-                case Mode.ZoneControl: timeRemaining = zoneControlDuration; break;
+                case Mode.Gridlock: timeRemaining = gridlockDuration; break;
                 default: timeRemaining = 0f; break;
             }
         }
@@ -175,9 +175,9 @@ public class MatchModeManager : MonoBehaviour
     {
         if (!matchRunning) return;
 
-        if (CurrentMode == Mode.ZoneControl)
+        if (CurrentMode == Mode.Gridlock)
         {
-            TickZoneControl();
+            TickGridlock();
             if (!matchRunning) return; // a team may have just hit 100%
         }
 
@@ -187,21 +187,21 @@ public class MatchModeManager : MonoBehaviour
             if (timeRemaining <= 0f)
             {
                 timeRemaining = 0f;
-                if (CurrentMode == Mode.ZoneControl) ResolveZoneControlAtBuzzer();
+                if (CurrentMode == Mode.Gridlock) ResolveGridlockAtBuzzer();
                 else ResolveAtBuzzer();
             }
         }
         UpdateHud();
     }
 
-    // Each team's bar fills at its own pace - 1% per zoneControlSecondsPerPercent
+    // Each team's bar fills at its own pace - 1% per gridlockSecondsPerPercent
     // while at least one of their cars is in the zone - completely independent
     // of whether the enemy is also inside; both can climb at once.
-    void TickZoneControl()
+    void TickGridlock()
     {
         if (controlZone == null) return;
 
-        float gain = Time.deltaTime / Mathf.Max(0.01f, zoneControlSecondsPerPercent);
+        float gain = Time.deltaTime / Mathf.Max(0.01f, gridlockSecondsPerPercent);
         if (controlZone.PlayerInside) playerZonePercent = Mathf.Min(100f, playerZonePercent + gain);
         if (controlZone.EnemyInside) enemyZonePercent = Mathf.Min(100f, enemyZonePercent + gain);
 
@@ -265,10 +265,10 @@ public class MatchModeManager : MonoBehaviour
         StartCoroutine(ClearBannerAfter(2.5f));
     }
 
-    // Zone Control's buzzer rule is simpler than Deathmatch/CTF's: higher
+    // Gridlock's buzzer rule is simpler than Deathmatch/CTF's: higher
     // percentage just wins outright, and an exact tie is a flat draw - this
     // mode never hands off to DeathZone.
-    void ResolveZoneControlAtBuzzer()
+    void ResolveGridlockAtBuzzer()
     {
         if (playerZonePercent > enemyZonePercent) EndMatch(Team.Player);
         else if (enemyZonePercent > playerZonePercent) EndMatch(Team.Enemy);
@@ -323,7 +323,7 @@ public class MatchModeManager : MonoBehaviour
             case Mode.CaptureTheFlag:
                 score = $"YOU {playerCaptures} - {enemyCaptures} ENEMY   (first to {ctfCaptureGoal})   kills {playerKills}-{enemyKills}";
                 break;
-            case Mode.ZoneControl:
+            case Mode.Gridlock:
                 score = $"YOU {Mathf.FloorToInt(playerZonePercent)}% - {Mathf.FloorToInt(enemyZonePercent)}% ENEMY   (first to 100%)";
                 break;
             default: // DeathZoneTest

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // ATTACH THIS TO: an empty GameObject at the arena centre (e.g. "ControlZone" -
-// active only while Zone Control is the running mode, toggled by
+// active only while Gridlock is the running mode, toggled by
 // MatchModeManager). Builds its own glowing ground-disc at runtime (no art,
 // same approach as DeathZone/Flag) and, every frame, checks which team(s)
 // currently have a car standing inside (PlayerInside / EnemyInside) via a
