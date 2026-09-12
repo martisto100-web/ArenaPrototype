@@ -3,19 +3,22 @@ using UnityEngine;
 
 // ATTACH THIS TO: the GameDirector object (alongside ModeMenu / ScreenFx).
 // Runs the two structured modes ModeMenu can start:
-//   Deathmatch        - first team to killGoal eliminations wins; 3 min timer.
+//   Deathmatch        - first team to killGoal eliminations wins; 5 min timer.
 //   Capture the Flag  - first team to captureGoal flag captures wins; 4 min timer.
 // In both, if nobody hits the goal before the timer runs out the team with more
 // eliminations wins (captures are CTF's win condition, kills are just its
 // tiebreaker); if THAT'S also tied, DeathZone sudden death decides it - first
-// car to go down loses. Kills/respawns themselves are still all MatchDirector /
-// Respawner as always; this only watches the score and owns the HUD text
-// (drawn through ScreenFx) and Flag setup for CTF.
+// car to go down loses. Also runs DeathZoneTest - a debug-only mode (ModeMenu's
+// "DeathZone Test" button) that drops straight into sudden death with no goal
+// or timer, so the zone can be checked out without grinding out a real tie.
+// Kills/respawns themselves are still all MatchDirector / Respawner as always;
+// this only watches the score and owns the HUD text (drawn through ScreenFx)
+// and Flag setup for CTF.
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
 {
-    public enum Mode { None, Deathmatch, CaptureTheFlag }
+    public enum Mode { None, Deathmatch, CaptureTheFlag, DeathZoneTest }
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
@@ -99,14 +102,27 @@ public class MatchModeManager : MonoBehaviour
             return;
         }
 
-        timeRemaining = mode == Mode.Deathmatch ? deathmatchDuration : ctfDuration;
-
         if (playerHealth != null) playerHealth.Died += OnPlayerDied;
         if (enemyHealth != null) enemyHealth.Died += OnEnemyDied;
         if (mode == Mode.CaptureTheFlag)
         {
             if (playerFlag != null) playerFlag.Captured += OnCaptured;
             if (enemyFlag != null) enemyFlag.Captured += OnCaptured;
+        }
+
+        if (mode == Mode.DeathZoneTest)
+        {
+            // Skip straight to the exact state a real tie-at-the-buzzer leaves
+            // you in - no goal, no timer, just the zone and whoever's left.
+            timeRemaining = 0f;
+            suddenDeath = true;
+            deathZone.BeginShrinking();
+            screenFx.ShowMessage("SUDDEN DEATH!");
+            StartCoroutine(ClearBannerAfter(2.5f));
+        }
+        else
+        {
+            timeRemaining = mode == Mode.Deathmatch ? deathmatchDuration : ctfDuration;
         }
 
         UpdateHud();
@@ -228,9 +244,19 @@ public class MatchModeManager : MonoBehaviour
 
     void UpdateHud()
     {
-        string score = CurrentMode == Mode.Deathmatch
-            ? $"YOU {playerKills} - {enemyKills} ENEMY   (first to {deathmatchKillGoal})"
-            : $"YOU {playerCaptures} - {enemyCaptures} ENEMY   (first to {ctfCaptureGoal})   kills {playerKills}-{enemyKills}";
+        string score;
+        switch (CurrentMode)
+        {
+            case Mode.Deathmatch:
+                score = $"YOU {playerKills} - {enemyKills} ENEMY   (first to {deathmatchKillGoal})";
+                break;
+            case Mode.CaptureTheFlag:
+                score = $"YOU {playerCaptures} - {enemyCaptures} ENEMY   (first to {ctfCaptureGoal})   kills {playerKills}-{enemyKills}";
+                break;
+            default: // DeathZoneTest
+                score = "DEATH ZONE TEST";
+                break;
+        }
 
         string status = suddenDeath ? "SUDDEN DEATH" : FormatTime(timeRemaining);
 
