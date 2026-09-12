@@ -5,26 +5,36 @@ using UnityEngine.UI;
 // ATTACH THIS TO: the GameDirector object.
 // Mode picker. Shows on Play (time + audio frozen) and again any time ESC /
 // Android back is pressed while in an arena:
-//   "1v1 Arena"  - the enemy car drives + shoots (EnemyDriverAI).
-//   "Test Arena" - the enemy car becomes an inert TestDummy: 100 HP, never moves
-//                  or shoots, still explodes with the same FX and runs the
-//                  "Enemy respawns in" 5s countdown.
-// While the menu is open the enemy AI is held disabled so it can't fire into the
-// frozen scene. "Resume" (or ESC again) closes without switching, once a mode is
-// already running.
+//   "Deathmatch"        - MatchModeManager's structured mode: first to 10 kills
+//                         (3 min timer), tiebreak -> DeathZone sudden death.
+//   "Capture the Flag"  - MatchModeManager's structured mode: first to 3 flag
+//                         captures (4 min timer), tiebreak on kills then
+//                         DeathZone sudden death.
+//   "1v1 Arena"         - untimed free play against the live AI, no goal/HUD.
+//   "Test Arena"        - the enemy car becomes an inert TestDummy: 100 HP,
+//                         never moves or shoots, still explodes with the same
+//                         FX and runs the "Enemy respawns in" 5s countdown.
+// All four run the enemy AI normally except Test Arena. While the menu is open
+// the enemy AI is held disabled so it can't fire into the frozen scene.
+// "Resume" (or ESC again) closes without switching, once a mode is already
+// running. MatchModeManager also reopens this menu itself a few seconds after
+// a Deathmatch/CTF match ends.
+[RequireComponent(typeof(MatchModeManager))]
 public class ModeMenu : MonoBehaviour
 {
-    private enum Mode { None, Arena1v1, Test }
+    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag }
 
     private GameObject canvasGO;
     private GameObject resumeButton;
     private bool menuOpen;
     private Mode current = Mode.None;
+    private MatchModeManager matchModeManager;
 
     private static Sprite whiteSprite;
 
     void Awake()
     {
+        matchModeManager = GetComponent<MatchModeManager>();
         Build();
         Open();
     }
@@ -44,6 +54,9 @@ public class ModeMenu : MonoBehaviour
     }
 
     // ---- open / close ----
+
+    // Called by MatchModeManager a few seconds after a Deathmatch/CTF match ends.
+    public void OpenMenu() => Open();
 
     void Open()
     {
@@ -68,11 +81,22 @@ public class ModeMenu : MonoBehaviour
     {
         current = mode;
         ApplyMode(mode);
+        if (matchModeManager != null) matchModeManager.StartMatch(ToMatchMode(mode));
 
         menuOpen = false;
         canvasGO.SetActive(false);
         Time.timeScale = 1f;
         AudioListener.pause = false;
+    }
+
+    static MatchModeManager.Mode ToMatchMode(Mode mode)
+    {
+        switch (mode)
+        {
+            case Mode.Deathmatch: return MatchModeManager.Mode.Deathmatch;
+            case Mode.CaptureTheFlag: return MatchModeManager.Mode.CaptureTheFlag;
+            default: return MatchModeManager.Mode.None; // Arena1v1 / Test - free play, no structured match
+        }
     }
 
     // ---- enemy configuration ----
@@ -131,13 +155,15 @@ public class ModeMenu : MonoBehaviour
         Stretch(bg.rectTransform);
         bg.raycastTarget = true; // swallow taps meant for the game / joysticks
 
-        MakeLabel("WRAITH", canvasGO.transform, 92, FontStyle.Bold, new Vector2(0f, 240f), Color.white);
-        MakeLabel("select mode", canvasGO.transform, 34, FontStyle.Normal, new Vector2(0f, 170f),
+        MakeLabel("WRAITH", canvasGO.transform, 92, FontStyle.Bold, new Vector2(0f, 340f), Color.white);
+        MakeLabel("select mode", canvasGO.transform, 34, FontStyle.Normal, new Vector2(0f, 270f),
                   new Color(1f, 1f, 1f, 0.55f));
 
-        MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, 55f), () => Pick(Mode.Arena1v1));
-        MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -105f), () => Pick(Mode.Test));
-        resumeButton = MakeButton("Resume", canvasGO.transform, new Vector2(0f, -260f), () => Close());
+        MakeButton("Deathmatch", canvasGO.transform, new Vector2(0f, 160f), () => Pick(Mode.Deathmatch));
+        MakeButton("Capture the Flag", canvasGO.transform, new Vector2(0f, 20f), () => Pick(Mode.CaptureTheFlag));
+        MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, -120f), () => Pick(Mode.Arena1v1));
+        MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -260f), () => Pick(Mode.Test));
+        resumeButton = MakeButton("Resume", canvasGO.transform, new Vector2(0f, -400f), () => Close());
         resumeButton.SetActive(false);
     }
 

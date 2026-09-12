@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 // ATTACH THIS TO: your vehicle GameObject (same as before - no need to re-add).
@@ -16,6 +17,10 @@ public class CarController : MonoBehaviour
 
     [Header("Touch Input (optional)")]
     public VirtualJoystick movementJoystick;
+
+    // 1 = normal. Flag sets this below 1 while this car is carrying an enemy
+    // flag in Capture the Flag, and restores it to 1 on drop/score/death.
+    [NonSerialized] public float speedMultiplier = 1f;
 
     private Rigidbody rb;
     private float currentSpeed = 0f;
@@ -44,7 +49,7 @@ public class CarController : MonoBehaviour
             rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRotation, turnSmoothing * Time.fixedDeltaTime));
         }
 
-        float targetSpeed = inputMagnitude > 0.1f ? moveSpeed * inputMagnitude : 0f;
+        float targetSpeed = inputMagnitude > 0.1f ? moveSpeed * speedMultiplier * inputMagnitude : 0f;
         currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.fixedDeltaTime);
 
         Vector3 forwardMove = transform.forward * currentSpeed * Time.fixedDeltaTime;

@@ -985,6 +985,80 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &435464025
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 435464028}
+  - component: {fileID: 435464027}
+  - component: {fileID: 435464026}
+  m_Layer: 0
+  m_Name: EnemyFlag
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &435464026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435464025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dc439bcb77bcb145934fe0804137987, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Flag
+  owningTeam: 1
+  pickupRadius: 1.6
+  captureRadius: 3
+  carrierSpeedPenalty: 0.35
+  recaptureLockout: 5
+  carryOffset: {x: 0, y: 2.4, z: 0}
+  waveSpeed: 3
+  waveAngle: 12
+--- !u!135 &435464027
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435464025}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &435464028
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435464025}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &536706258
 GameObject:
   m_ObjectHideFlags: 0
@@ -999,6 +1073,8 @@ GameObject:
   - component: {fileID: 536706262}
   - component: {fileID: 536706263}
   - component: {fileID: 536706264}
+  - component: {fileID: 536706266}
+  - component: {fileID: 536706265}
   m_Layer: 0
   m_Name: GameDirector
   m_TagString: Untagged
@@ -1040,6 +1116,7 @@ MonoBehaviour:
   flashFade: 0.35
   fontSize: 46
   textColor: {r: 1, g: 1, b: 1, a: 1}
+  hudFontSize: 34
 --- !u!4 &536706261
 Transform:
   m_ObjectHideFlags: 0
@@ -1098,6 +1175,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78dd4732758985845aee244f5c31c12d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ModeMenu
+--- !u!114 &536706265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a8de2614a3b59946b5f33ada3c6dd88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MatchModeManager
+  deathmatchKillGoal: 10
+  deathmatchDuration: 180
+  ctfCaptureGoal: 3
+  ctfDuration: 240
+  winBannerSeconds: 4
+--- !u!114 &536706266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 536706258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6c02e4810ec24d4d99531d2b812c837, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathZone
+  center: {x: 0, y: 0, z: 0}
+  startRadius: 36
+  outerRadius: 45
+  shrinkDuration: 20
+  stageTimes:
+  - 0
+  - 5
+  - 10
+  - 15
+  stageDamage:
+  - 1
+  - 3
+  - 5
+  - 7
+  zoneColor: {r: 0.9, g: 0.22, b: 0.04, a: 0.35}
+  edgeColor: {r: 1, g: 0.75, b: 0.15, a: 0.85}
+  ringSegments: 64
+  emberCount: 20
+  pulseSpeed: 2.5
 --- !u!1 &628164967
 GameObject:
   m_ObjectHideFlags: 0
@@ -2272,6 +2397,80 @@ MonoBehaviour:
   maxPitch: 1.7
   responseSpeed: 6
   spatialMaxDistance: 45
+--- !u!1 &1656102292
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1656102295}
+  - component: {fileID: 1656102294}
+  - component: {fileID: 1656102293}
+  m_Layer: 0
+  m_Name: PlayerFlag
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1656102293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1656102292}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dc439bcb77bcb145934fe0804137987, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Flag
+  owningTeam: 0
+  pickupRadius: 1.6
+  captureRadius: 3
+  carrierSpeedPenalty: 0.35
+  recaptureLockout: 5
+  carryOffset: {x: 0, y: 2.4, z: 0}
+  waveSpeed: 3
+  waveAngle: 12
+--- !u!135 &1656102294
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1656102292}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &1656102295
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1656102292}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: -20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1662633463
 GameObject:
   m_ObjectHideFlags: 0
@@ -2614,3 +2813,5 @@ SceneRoots:
   - {fileID: 1391860515}
   - {fileID: 757744298}
   - {fileID: 148833472}
+  - {fileID: 1656102295}
+  - {fileID: 435464028}

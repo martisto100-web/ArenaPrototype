@@ -3,8 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // ATTACH THIS TO: the GameDirector object (alongside MatchDirector).
-// Builds a screen-space overlay at runtime: a full-screen flash and a centred
-// countdown label. No scene or prefab setup needed.
+// Builds a screen-space overlay at runtime: a full-screen flash, a centred
+// countdown/banner label, and a small top-of-screen HUD line (used by
+// MatchModeManager for the Deathmatch / Capture the Flag score + timer). No
+// scene or prefab setup needed.
 public class ScreenFx : MonoBehaviour
 {
     [Header("Flash")]
@@ -16,8 +18,12 @@ public class ScreenFx : MonoBehaviour
     public int fontSize = 46;
     public Color textColor = Color.white;
 
+    [Header("HUD label")]
+    public int hudFontSize = 34;
+
     private Image flash;
     private Text countdown;
+    private Text hud;
     private Coroutine flashCo;
 
     private static Sprite whiteSprite;
@@ -75,6 +81,29 @@ public class ScreenFx : MonoBehaviour
         Shadow shadow = textGO.AddComponent<Shadow>();
         shadow.effectColor = new Color(0f, 0f, 0f, 0.65f);
         shadow.effectDistance = new Vector2(2f, -2f);
+
+        GameObject hudGO = new GameObject("Hud");
+        hudGO.transform.SetParent(canvasGO.transform, false);
+        hud = hudGO.AddComponent<Text>();
+        hud.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        hud.fontSize = hudFontSize;
+        hud.fontStyle = FontStyle.Bold;
+        hud.alignment = TextAnchor.UpperCenter;
+        hud.color = Color.white;
+        hud.raycastTarget = false;
+        hud.horizontalOverflow = HorizontalWrapMode.Overflow;
+        hud.verticalOverflow = VerticalWrapMode.Overflow;
+        hud.text = string.Empty;
+        RectTransform hr = hud.rectTransform;
+        hr.anchorMin = new Vector2(0.5f, 1f);
+        hr.anchorMax = new Vector2(0.5f, 1f);
+        hr.pivot = new Vector2(0.5f, 1f);
+        hr.sizeDelta = new Vector2(1400f, 100f);
+        hr.anchoredPosition = new Vector2(0f, -20f);
+
+        Shadow hudShadow = hudGO.AddComponent<Shadow>();
+        hudShadow.effectColor = new Color(0f, 0f, 0f, 0.65f);
+        hudShadow.effectDistance = new Vector2(2f, -2f);
     }
 
     static Sprite WhiteSprite()
@@ -111,8 +140,25 @@ public class ScreenFx : MonoBehaviour
         if (countdown != null) countdown.text = label + "  " + seconds;
     }
 
+    // Plain centred banner text, no trailing number - "SUDDEN DEATH!", "YOU WIN".
+    public void ShowMessage(string text)
+    {
+        if (countdown != null) countdown.text = text;
+    }
+
     public void HideCountdown()
     {
         if (countdown != null) countdown.text = string.Empty;
+    }
+
+    // Persistent top-of-screen line - MatchModeManager's score/timer readout.
+    public void SetHud(string text)
+    {
+        if (hud != null) hud.text = text;
+    }
+
+    public void HideHud()
+    {
+        if (hud != null) hud.text = string.Empty;
     }
 }

@@ -3,11 +3,38 @@
 A twin-stick **vehicle arena shooter** for mobile (iOS/Android). Early prototype.
 The player's car is the **Wraith** (a sports car; scene object `Wraith`, tag `Player`).
 
-`ModeMenu` offers **1v1 Arena** (enemy AI as normal) or **Test Arena** (the enemy
-becomes an inert `TestDummy` — 100 HP, never moves or shoots, still explodes +
-runs the "Enemy respawns in" countdown — for solo testing of movement / weapons /
-audio). It shows on Play and re-opens on **ESC / Android back** any time (time +
-audio frozen); you can switch modes on the fly, or Resume / ESC-again to stay.
+`ModeMenu` offers four modes: **Deathmatch** and **Capture the Flag** (both run
+through `MatchModeManager` — structured matches with a goal, a timer, and a
+`DeathZone` sudden-death tiebreaker), **1v1 Arena** (untimed free play, enemy AI
+as normal, no goal/HUD), or **Test Arena** (the enemy becomes an inert
+`TestDummy` — 100 HP, never moves or shoots, still explodes + runs the "Enemy
+respawns in" countdown — for solo testing of movement / weapons / audio). It
+shows on Play and re-opens on **ESC / Android back** any time (time + audio
+frozen); you can switch modes on the fly, or Resume / ESC-again to stay.
+`MatchModeManager` also reopens it itself a few seconds after a Deathmatch/CTF
+match ends.
+
+- **Deathmatch:** first team to `deathmatchKillGoal` (10) eliminations wins;
+  `deathmatchDuration` (180s) timer. Nobody at the goal when it expires → more
+  kills wins; tied on kills too → `DeathZone` sudden death.
+- **Capture the Flag:** each team's `Flag` sits at its own base (built at
+  runtime — pole + waving cloth + a translucent base-pad marking the capture
+  radius, no art). Drive into the *enemy's* flag to pick it up — that cuts your
+  `CarController.speedMultiplier` by `carrierSpeedPenalty` (35%) until you
+  either bring it within `captureRadius` of your own base (scores a point, the
+  flag snaps home with a `recaptureLockout` of 5s) or get killed (flag returns
+  home instantly, no lockout, no ground-drop). First team to `ctfCaptureGoal`
+  (3) captures wins; `ctfDuration` (240s) timer. Nobody at the goal when it
+  expires → more *eliminations* wins (kills are CTF's tiebreaker, not
+  captures); tied on kills too → `DeathZone` sudden death.
+- **DeathZone sudden death:** a circular safe zone shrinks from covering the
+  whole arena to nothing over `shrinkDuration` (20s); anything caught outside
+  it takes escalating damage per second (1 → 3 at 5s → 5 at 10s → 7 at 15s,
+  holding at 7 after). First car to go down loses. Visual is a translucent,
+  fiery orange-to-yellow annulus (code-generated mesh, no art) plus a ring of
+  ember particles riding the shrinking edge — loosely modelled on
+  battle-royale "storm" zones (Fortnite/PUBG/Apex), reskinned fiery/transparent
+  for this arena rather than copying any one game's look.
 
 ## Engine / setup
 
@@ -24,15 +51,18 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 | File | Attach to | Role |
 |---|---|---|
 | `IVehicleInput.cs` | — (interface) | `MoveInput` / `AimInput` (Vector2, twin-stick style). Anything implementing it on a vehicle drives that vehicle. |
-| `CarController.cs` | a vehicle (needs `Rigidbody`) | Turns to face the input direction, accelerates forward. Input priority: `IVehicleInput` component → `movementJoystick` → `Input.GetAxis`. Exposes `CurrentSpeed` (accel/decel-smoothed forward speed) for `EngineAudio`. |
+| `CarController.cs` | a vehicle (needs `Rigidbody`) | Turns to face the input direction, accelerates forward. Input priority: `IVehicleInput` component → `movementJoystick` → `Input.GetAxis`. Exposes `CurrentSpeed` (accel/decel-smoothed forward speed) for `EngineAudio`. `speedMultiplier` (1 = normal, not serialized) scales `moveSpeed`; `Flag` sets it below 1 while this car carries an enemy flag. |
 | `EngineAudio.cs` | a car root (needs `CarController`) | Loops one engine clip (the idle sound) and lerps its **pitch** + volume between `idlePitch`/`idleVolume` and `maxPitch`(1.7)/`maxVolume` by `load` = `CurrentSpeed / moveSpeed` — so the tone tracks the car's momentum, sweeping up as it accelerates and back down as it coasts to a stop (`responseSpeed` 6 adds a little smoothing). 2D on the `Player`-tagged car, 3D (linear rolloff, `spatialMaxDistance`) on others. Loop auto-loads from `Resources/Audio/Engine`. Disabled by `Respawner` on death. |
 | `Weapon.cs` | a vehicle | Independent "turret" aim; auto-fires past `fireDeadzone`. Input priority: `IVehicleInput` → `aimJoystick` → `Fire1` (straight ahead). Stamps each spawned bullet with this vehicle's `Team`. Every bullet plays one discrete gunshot from `fireShots[]` (no spray loop) — a real .50-cal shot with a ~1.3s tail; random clip, never repeating back-to-back, small `firePitchJitter` / `fireVolumeJitter`, on a **5-voice** 2D `AudioSource` pool so consecutive shots' tails overlap and build the "wall" on a spray while a lone tap still rings out. Auto-loads from `Resources/Audio/Fire` if empty. `fireVolume` 0.5, `firePitch` (<1 = deeper). |
 | `PlayerInputRouter.cs` | `Wraith` (with `CarController` + `Weapon`) | The player's `IVehicleInput`. `Scheme.Auto` → WASD + mouse-aim + hold-LMB-fire on non-mobile, else the two `VirtualJoystick`s (refs auto-pulled from `CarController`/`Weapon` if left empty). Turret only re-aims while LMB is held. |
 | `HealthBar.cs` | a car root with `Health` | Builds a billboarded world-space bar (two unlit quads) above the car **at runtime** — no scene setup, no art. Green→red by `HealthFraction`. `Hidden` (set by `Respawner`) toggles the bar off while dead. Cleans up its bar object in `OnDestroy`. |
 | `Respawner.cs` | `Wraith` / `EnemyCar` (needs `Health` + `Rigidbody`) | Sets `Health.destroyOnDeath = false`. On death: disables controls (`CarController`/`Weapon`/`EnemyDriverAI`/`PlayerInputRouter`/`EngineAudio`), collider, renderers, hides the health bar, freezes the body. `Respawn()` (called by `MatchDirector`) revives, drops the car in from `dropHeight` (7) with `dropSpeed` (12) downward velocity; controls return the instant a downward raycast says it's within `landClearance` of a surface (`maxFallTime` is a safety cap) — no dead time on the ground. |
 | `MatchDirector.cs` | `GameDirector` (needs `ScreenFx`) | Subscribes to every `Health.Died` on a car with a `Respawner`. On death → (if enabled in `GameSettings`) camera `Shake` + `ScreenFx.Flash`, then counts `respawnSeconds`→1 on screen ("Respawning in:" / "Enemy respawns in:"), then `Respawner.Respawn()` + a small landing shake. Player's countdown owns the shared label. |
-| `ScreenFx.cs` | `GameDirector` | Builds a screen-space overlay at runtime: full-screen `Flash()` quad + centred `ShowCountdown(label,n)` label (legacy `Text`, `LegacyRuntime.ttf`). |
-| `ModeMenu.cs` | `GameDirector` | Runtime uGUI overlay (same style as `ScreenFx`): title "WRAITH" + **1v1 Arena** / **Test Arena** / **Resume** buttons. Opens on `Awake` and on **ESC / Android back** (`Input.GetKeyDown(KeyCode.Escape)`); each open freezes `Time.timeScale` + `AudioListener` and holds the enemy AI disabled. A pick calls `ApplyMode`: 1v1 → `Detach` any `TestDummy` + enable the AI; Test → disable the AI + `AddComponent<TestDummy>()`. Persists (not destroyed) so it can re-open. Resume shows only once a mode is chosen. |
+| `ScreenFx.cs` | `GameDirector` | Builds a screen-space overlay at runtime: full-screen `Flash()` quad + centred `ShowCountdown(label,n)` / `ShowMessage(text)` label (legacy `Text`, `LegacyRuntime.ttf`) + a persistent top-of-screen `SetHud(text)` line (`MatchModeManager`'s score/timer readout). |
+| `ModeMenu.cs` | `GameDirector` (needs `MatchModeManager`) | Runtime uGUI overlay (same style as `ScreenFx`): title "WRAITH" + **Deathmatch** / **Capture the Flag** / **1v1 Arena** / **Test Arena** / **Resume** buttons. Opens on `Awake` and on **ESC / Android back** (`Input.GetKeyDown(KeyCode.Escape)`), and can be reopened by `MatchModeManager` via `OpenMenu()`; each open freezes `Time.timeScale` + `AudioListener` and holds the enemy AI disabled. A pick calls `ApplyMode` (1v1/Deathmatch/CTF → `Detach` any `TestDummy` + enable the AI; Test → disable the AI + `AddComponent<TestDummy>()`) and `MatchModeManager.StartMatch(...)` (`None` for 1v1/Test). Persists (not destroyed) so it can re-open. Resume shows only once a mode is chosen. |
+| `MatchModeManager.cs` | `GameDirector` (needs `ScreenFx` + `DeathZone`) | Runs Deathmatch / Capture the Flag: owns the kill/capture tallies, the match timer, the HUD text (via `ScreenFx.SetHud`), the goal/timer win check, and handing off to `DeathZone` for sudden death when tied at the buzzer. Finds the two cars + two `Flag`s by `TeamMember`/`owningTeam` on `StartMatch`, wires the Flags to each other, and (de)activates them per mode. Shows a "YOU WIN!" / "ENEMY WINS!" banner then calls `ModeMenu.OpenMenu()` after `winBannerSeconds` (4s). Doesn't touch respawn logic — `MatchDirector`/`Respawner` keep doing that regardless of mode. |
+| `DeathZone.cs` | `GameDirector` | Sudden-death hazard, idle until `MatchModeManager` calls `BeginShrinking()`. See "Deathmatch" section above for the shrink/damage curve. `Stop()` hides it and resets. All-code visual (annulus mesh with a per-vertex outer/edge color gradient + a ring of ember `ParticleSystem`s), same no-art approach as `DamageFx`/`HealthBar`. |
+| `Flag.cs` | an empty base object per team (added by the CTF setup) | One team's flag + base. `owningTeam` says whose base it is; only the *other* team can pick it up (`OnTriggerEnter`, needs `CarController`+`TeamMember`, blocked while `Respawner.IsDead`). While carried it follows the carrier and sets `CarController.speedMultiplier`; reaching `captureRadius` of the other `Flag`'s home (found via `SetOther`, wired by `MatchModeManager`) fires `Captured` and snaps home with a `recaptureLockout`. A car dying calls `DropIfCarriedBy` (from `MatchModeManager`'s death handlers) → instant, lockout-free return home. `OnDisable`/`OnEnable` reset it cleanly when `MatchModeManager` toggles it off/on between modes. |
 | `TestDummy.cs` | added at runtime to an `EnemyCar` by `ModeMenu` | Turns the enemy into an inert practice target: every frame disables `EnemyDriverAI` / `CarController` / `Weapon` / `EngineAudio` (re-killing them after a `Respawner` respawn) and, while fully alive, pins the body at `Respawner.SpawnPosition`. `Health` / `Respawner` / `DamageFx` / `HealthBar` untouched, so it still blows up with the same FX and runs the "Enemy respawns in" 5s countdown. `Detach()` restores the controls + removes itself (used when switching back to 1v1). |
 | `GameSettings.cs` | — (static) | `ScreenShakeOnElimination` / `ScreenFlashOnElimination` bools (default on) + `BulletHitVolume` float (raw AudioSource volume, default 0.23, clamped `0..BulletHitVolumeMax` = 0.4) — gameplay reads this; the menu binds `BulletHitVolumePercent` (0..100, 100 = max, ~57.5 default), slider labelled `BulletHitVolumeLabel` ("Projectile Impact Volume"). `PlayerPrefs`-backed. No settings-menu UI yet — these are the hooks a menu will flip. |
 | `DamageFx.cs` | a car root with `Health` | Runtime particle FX (all code-generated, no art): smoke below `smokeBelow` (0.5) HP, flames below `fireBelow` (0.3) — `flameCount` tufts scattered at random spots over the car (`flameArea` half-extents), each a random size/rate; and on `Health.Died` an explosion burst + an expanding translucent-grey shockwave dome (`shockwaveRadius`/`Duration`/`Color`) + the `explosionSfx` clip (~3.6s, smooth baked-in fade-out) on a runtime-added 2D `AudioSource` on the car root (`explosionVolume` 1, `explosionPitchJitter` 0); `explosionSfx` auto-loads from `Resources/Audio/Explosion` if left empty. FX rig follows the car unparented but copies its rotation so the flames stay car-relative. |
@@ -49,7 +79,8 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 - **Scene:** `Assets/Scenes/SampleScene.unity` (the only scene).
   - `Wraith` — the player's car; tag `Player`, layer `Player`; `CarController` + `Weapon` (still hold the two `VirtualJoystick` refs) + `Health(100)` + `TeamMember(Player)` + `PlayerInputRouter` + `HealthBar` + `Respawner` + `DamageFx` + `EngineAudio`; child `FirePoint`.
   - `EnemyCar` — red material, `Untagged`, starts at `(0, 0.5, 20)`; same base components as the Wraith but joystick refs cleared, plus `EnemyDriverAI` + `Health(100)` + `TeamMember(Enemy)` + `HealthBar` + `Respawner` + `DamageFx` + `EngineAudio`; child `FirePoint`. In **Test Arena** mode `ModeMenu` adds a `TestDummy` here.
-  - `GameDirector` — empty; `MatchDirector` + `ScreenFx` + `KillFloor` + `OffscreenMarkers` + `ModeMenu`.
+  - `GameDirector` — empty; `MatchDirector` + `ScreenFx` + `KillFloor` + `OffscreenMarkers` + `ModeMenu` + `MatchModeManager` + `DeathZone`.
+  - `PlayerFlag` (`owningTeam = Player`, near the Wraith's spawn) / `EnemyFlag` (`owningTeam = Enemy`, near the EnemyCar's spawn) — Capture the Flag's two bases; `Flag` builds its own pole/cloth/base-pad visual at runtime. Active only while Capture the Flag is the running mode (`MatchModeManager` toggles them).
   - `Arena_Wall_N/S/E/W` — invisible BoxCollider boundary walls at the Plane edges (±25.5), so cars can't drive off. Some future arenas will omit these (falling = a hazard, caught by `KillFloor`).
   - `Canvas/movejoystick bg` + `aimjoystick bg` — the two `VirtualJoystick`s, each also carrying a `JoystickSkin` (arrows / bullet glyph).
   - Four `Cube`s — static obstacles (BoxCollider, no team/health).
@@ -75,4 +106,4 @@ Scripts live flat in `Assets/` (not in a `Scripts/` subfolder yet).
 
 ## Not yet built
 
-Enemy spawning/waves, score / match win state, audio mixer / master volume settings / more SFX (machine-gun fire, elimination explosion, player-hit impact, and a dynamic engine — idle+rev — exist in `Assets/Resources/Audio/`), muzzle flash, per-hit feedback, **settings menu UI** (hooks exist: `GameSettings.ScreenShake/FlashOnElimination` toggles + `BulletHitVolumePercent`, a 0..100 slider), main menu, line-of-sight checks for the AI (it currently shoots through walls; obstacle *avoidance* exists), per-vehicle stat presets, rectangular arenas.
+Enemy spawning/waves, audio mixer / master volume settings / more SFX (machine-gun fire, elimination explosion, player-hit impact, and a dynamic engine — idle+rev — exist in `Assets/Resources/Audio/`), muzzle flash, per-hit feedback, **settings menu UI** (hooks exist: `GameSettings.ScreenShake/FlashOnElimination` toggles + `BulletHitVolumePercent`, a 0..100 slider), main menu, line-of-sight checks for the AI (it currently shoots through walls; obstacle *avoidance* exists), per-vehicle stat presets, rectangular arenas.
