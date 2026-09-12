@@ -45,7 +45,7 @@ public class MatchModeManager : MonoBehaviour
 
     [Header("Post-match sequence")]
     public float postMatchZoomDuration = 1.5f; // how long the camera's pull-back takes
-    public float postMatchMenuDelay = 1f;      // the quiet beat after everything settles, before the menu reopens
+    public float postMatchMenuDelay = 2.5f;    // the quiet beat after everything settles, before the menu reopens
     public float postMatchMaxWait = 6f;        // safety cap - see Respawner.maxFallTime for the same idea
 
     public Mode CurrentMode { get; private set; } = Mode.None;

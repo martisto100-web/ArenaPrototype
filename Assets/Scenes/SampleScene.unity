@@ -1198,7 +1198,7 @@ MonoBehaviour:
   gridlockDuration: 210
   gridlockSecondsPerPercent: 0.7
   postMatchZoomDuration: 1.5
-  postMatchMenuDelay: 1
+  postMatchMenuDelay: 2.5
   postMatchMaxWait: 6
 --- !u!114 &536706266
 MonoBehaviour:
