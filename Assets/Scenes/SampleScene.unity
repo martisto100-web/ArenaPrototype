@@ -2104,8 +2104,10 @@ MonoBehaviour:
   neutralColor: {r: 0.9, g: 0.9, b: 0.95, a: 0.22}
   playerColor: {r: 0.15, g: 0.4, b: 0.95, a: 0.5}
   enemyColor: {r: 0.85, g: 0.15, b: 0.12, a: 0.5}
-  pulseSpeed: 1.6
-  pulseAmount: 0.18
+  pulseSpeed: 1.8
+  pulseAmount: 0.35
+  glowWidth: 1.8
+  glowBrightness: 1.7
 --- !u!4 &1413778395
 Transform:
   m_ObjectHideFlags: 0
