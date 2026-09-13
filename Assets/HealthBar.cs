@@ -83,6 +83,17 @@ public class HealthBar : MonoBehaviour
         if (fillMat != null) fillMat.color = Color.Lerp(lowColor, fullColor, frac);
     }
 
+    // The bar is a standalone object, not parented under the car, so it never
+    // automatically follows the car's own active state - without this, a car
+    // deactivated whole (Wreckoning's AllyCar/EnemyCar2 leaving that mode)
+    // would freeze LateUpdate() and leave its bar floating right where it
+    // last was, visible forever. LateUpdate() re-shows it on its own the next
+    // time this component runs, so no matching OnEnable() is needed.
+    void OnDisable()
+    {
+        if (root != null) root.gameObject.SetActive(false);
+    }
+
     void OnDestroy()
     {
         if (root != null) Destroy(root.gameObject);
