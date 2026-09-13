@@ -5,13 +5,13 @@ using UnityEngine.UI;
 // ATTACH THIS TO: the GameDirector.
 // Shows an arrow at the screen edge for every combatant that is currently off
 // camera, pointing toward it. Colour is relative to the local player:
-//   other team -> red (enemy), same team -> yellow (ally).
+//   other team -> red (enemy), same team -> blue (ally/teammate).
 // Builds its own overlay canvas and a pool of code-drawn arrow Images.
 public class OffscreenMarkers : MonoBehaviour
 {
     [Header("Colours")]
     public Color enemyColor = new Color(0.95f, 0.2f, 0.16f, 0.95f);
-    public Color allyColor = new Color(1f, 0.84f, 0.16f, 0.95f);
+    public Color allyColor = new Color(0.25f, 0.5f, 1f, 0.95f);
 
     [Header("Layout")]
     public float arrowSize = 62f;      // reference px (1920x1080 canvas)

@@ -35,6 +35,14 @@ public class CarController : MonoBehaviour
     // engine RPM; divide by moveSpeed for a 0..1 "throttle load".
     public float CurrentSpeed => currentSpeed;
 
+    // Zeroes the smoothed speed immediately, bypassing the usual decel curve -
+    // Respawner calls this on every respawn so a car that died mid-acceleration
+    // doesn't lurch forward under its own stale momentum the moment it reappears.
+    public void ResetSpeed()
+    {
+        currentSpeed = 0f;
+    }
+
     void Awake()
     {
         rb = GetComponent<Rigidbody>();

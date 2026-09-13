@@ -67,13 +67,14 @@ public class KnockoutManager : MonoBehaviour
     private static readonly string[] OriginalArenaNames =
     {
         "Plane", "Arena_Wall_N", "Arena_Wall_S", "Arena_Wall_E", "Arena_Wall_W",
-        "Cube", "Cube (1)", "Cube (2)", "Cube (3)"
+        "Cube", "Cube (1)", "Cube (2)", "Cube (3)", "PlayerBase", "EnemyBase"
     };
 
     private DeathZone zone;
     private KnockoutHud hud;
     private ScreenFx screenFx;
     private MatchModeManager matchModeManager;
+    private CameraFollow cameraFollow;
 
     private GameObject[] originalArenaPieces;
     private GameObject knockoutArenaRoot;
@@ -94,6 +95,7 @@ public class KnockoutManager : MonoBehaviour
         hud = GetComponent<KnockoutHud>();
         screenFx = FindFirstObjectByType<ScreenFx>();
         matchModeManager = FindFirstObjectByType<MatchModeManager>();
+        if (Camera.main != null) cameraFollow = Camera.main.GetComponent<CameraFollow>();
 
         // AllyCar/EnemyCar2 start inactive (only this mode uses them), so the
         // lookup has to include inactive objects - a plain GameObject.Find
@@ -195,6 +197,10 @@ public class KnockoutManager : MonoBehaviour
         ClearOverrideAndRevive(redResp1, redHealth1);
         ClearOverrideAndRevive(redResp2, redHealth2);
 
+        // Defensive: if the series ended (or was abandoned) while spectating
+        // the teammate, hand the camera back to the player's own car.
+        if (cameraFollow != null && blueCar1 != null) cameraFollow.target = blueCar1.transform;
+
         if (blueCar2 != null) blueCar2.gameObject.SetActive(false);
         if (redCar2 != null) redCar2.gameObject.SetActive(false);
 
@@ -259,7 +265,9 @@ public class KnockoutManager : MonoBehaviour
 
             if (CheckSeriesDone(out Team? seriesWinner))
             {
-                yield return new WaitForSeconds(postRoundDelay);
+                // No extra wait here - RunRound() already held on the
+                // round-result banner for postRoundDelay before returning, so
+                // the victory cinematic should kick off the instant we know.
                 matchModeManager.EndKnockoutSeries(seriesWinner);
                 yield break;
             }
@@ -325,6 +333,10 @@ public class KnockoutManager : MonoBehaviour
         hud.SetEliminated(2, false);
         hud.SetEliminated(3, false);
 
+        // Every fresh round starts spectating the player's own car again, even
+        // if last round ended with the camera parked on the teammate.
+        if (cameraFollow != null && blueCar1 != null) cameraFollow.target = blueCar1.transform;
+
         if (blueResp1 != null) blueResp1.Respawn();
         if (blueResp2 != null) blueResp2.Respawn();
         if (redResp1 != null) redResp1.Respawn();
@@ -351,7 +363,17 @@ public class KnockoutManager : MonoBehaviour
     // Each car has its own handler (rather than one generic one) so the right
     // roster slot gets its elimination cross with no lookup needed.
 
-    void OnBlue1Died(Health h) { hud.SetEliminated(0, true); ScheduleRoundCheck(); }
+    void OnBlue1Died(Health h)
+    {
+        hud.SetEliminated(0, true);
+        // Player's own car is out - spectate the teammate if they're still in it.
+        if (cameraFollow != null && blueCar2 != null && IsAlive(blueHealth2))
+        {
+            cameraFollow.target = blueCar2.transform;
+        }
+        ScheduleRoundCheck();
+    }
+
     void OnBlue2Died(Health h) { hud.SetEliminated(1, true); ScheduleRoundCheck(); }
     void OnRed1Died(Health h) { hud.SetEliminated(2, true); ScheduleRoundCheck(); }
     void OnRed2Died(Health h) { hud.SetEliminated(3, true); ScheduleRoundCheck(); }

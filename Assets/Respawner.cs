@@ -49,6 +49,7 @@ public class Respawner : MonoBehaviour
     private Collider bodyCollider;
     private MeshRenderer[] meshes;
     private HealthBar bar;
+    private CarController carController;
     private MonoBehaviour[] controlScripts; // CarController / Weapon / EnemyDriverAI / PlayerInputRouter
     private int groundMask;
 
@@ -62,6 +63,7 @@ public class Respawner : MonoBehaviour
         bodyCollider = GetComponent<Collider>();
         meshes = GetComponentsInChildren<MeshRenderer>();
         bar = GetComponent<HealthBar>();
+        carController = GetComponent<CarController>();
         controlScripts = CollectControls();
         groundMask = ~(1 << gameObject.layer); // everything except this car's own layer
 
@@ -114,6 +116,11 @@ public class Respawner : MonoBehaviour
     {
         transform.SetPositionAndRotation(SpawnPosition + Vector3.up * dropHeight, SpawnRotation);
         health.Revive();
+        // Otherwise a car that died mid-acceleration keeps that speed frozen in
+        // CarController while disabled, then lurches forward under it the
+        // instant controls return - even with input locked, since it's not
+        // input driving the motion, it's this stale leftover value.
+        if (carController != null) carController.ResetSpeed();
 
         if (bodyCollider != null) bodyCollider.enabled = true;
         foreach (MeshRenderer m in meshes) if (m != null) m.enabled = true;

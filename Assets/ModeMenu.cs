@@ -15,7 +15,7 @@ using UnityEngine.UI;
 //                         centre ControlZone; first to 100% wins (3.5 min
 //                         timer), higher % at the buzzer wins, exact tie is a
 //                         flat draw - no DeathZone for this one.
-//   "Knockout"          - 2v2, best-of-5 rounds, entirely run by
+//   "Wreckoning"        - 2v2, best-of-5 rounds, entirely run by
 //                         KnockoutManager on its own bigger arena - see that
 //                         file for the round/forcing-zone/roster-UI rules.
 //   "1v1 Arena"         - untimed free play against the live AI, no goal/HUD.
@@ -30,11 +30,11 @@ using UnityEngine.UI;
 // open the enemy AI is held disabled so it can't fire into the frozen scene.
 // "Resume" (or ESC again) closes without switching, once a mode is already
 // running. MatchModeManager also reopens this menu itself a few seconds after
-// a match ends (Deathmatch/CTF/Gridlock/Knockout/DeathZone Test all count).
+// a match ends (Deathmatch/CTF/Gridlock/Wreckoning/DeathZone Test all count).
 [RequireComponent(typeof(MatchModeManager))]
 public class ModeMenu : MonoBehaviour
 {
-    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, Gridlock, Knockout, DeathZoneTest }
+    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, Gridlock, Wreckoning, DeathZoneTest }
 
     private GameObject canvasGO;
     private GameObject resumeButton;
@@ -108,7 +108,7 @@ public class ModeMenu : MonoBehaviour
             case Mode.Deathmatch: return MatchModeManager.Mode.Deathmatch;
             case Mode.CaptureTheFlag: return MatchModeManager.Mode.CaptureTheFlag;
             case Mode.Gridlock: return MatchModeManager.Mode.Gridlock;
-            case Mode.Knockout: return MatchModeManager.Mode.Knockout;
+            case Mode.Wreckoning: return MatchModeManager.Mode.Wreckoning;
             case Mode.DeathZoneTest: return MatchModeManager.Mode.DeathZoneTest;
             default: return MatchModeManager.Mode.None; // Arena1v1 / Test - free play, no structured match
         }
@@ -177,7 +177,7 @@ public class ModeMenu : MonoBehaviour
         MakeButton("Deathmatch", canvasGO.transform, new Vector2(0f, 290f), () => Pick(Mode.Deathmatch));
         MakeButton("Capture the Flag", canvasGO.transform, new Vector2(0f, 194f), () => Pick(Mode.CaptureTheFlag));
         MakeButton("Gridlock", canvasGO.transform, new Vector2(0f, 98f), () => Pick(Mode.Gridlock));
-        MakeButton("Knockout", canvasGO.transform, new Vector2(0f, 2f), () => Pick(Mode.Knockout));
+        MakeButton("Wreckoning", canvasGO.transform, new Vector2(0f, 2f), () => Pick(Mode.Wreckoning));
         MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, -94f), () => Pick(Mode.Arena1v1));
         MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -190f), () => Pick(Mode.Test));
         MakeButton("DeathZone Test", canvasGO.transform, new Vector2(0f, -286f), () => Pick(Mode.DeathZoneTest));

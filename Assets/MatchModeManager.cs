@@ -8,11 +8,13 @@ using UnityEngine;
 //   Capture the Flag  - first team to captureGoal flag captures wins; 4 min timer.
 //   Gridlock          - first team to fill their OWN 0-100% bar to 100% wins;
 //                       3.5 min timer.
-//   Knockout          - 2v2, best-of-5 rounds, entirely owned by
+//   Wreckoning        - 2v2, best-of-5 rounds, entirely owned by
 //                       KnockoutManager (its own arena, forcing zone, roster
-//                       and round-dot UI) - see that file. This class just
-//                       starts/stops it and relays its final result into the
-//                       same end-of-match cinematic every other mode uses.
+//                       and round-dot UI - the class kept its old working
+//                       name internally, the mode itself is Wreckoning now)
+//                       - see that file. This class just starts/stops it and
+//                       relays its final result into the same end-of-match
+//                       cinematic every other mode uses.
 // In Deathmatch/CTF, if nobody hits the goal before the timer runs out the team
 // with more eliminations wins (captures are CTF's win condition, kills are just
 // its tiebreaker); if THAT'S also tied, DeathZone sudden death decides it -
@@ -28,7 +30,7 @@ using UnityEngine;
 // post-match cinematic every mode ends with: a "VICTORY"/"DEFEAT"/"DRAW"
 // banner (from the local player's own point of view - there's no networked
 // opponent to word it neutrally for yet), controls locked on every car
-// currently in play (2, or Knockout's 4) so they coast to a natural stop and
+// currently in play (2, or Wreckoning's 4) so they coast to a natural stop and
 // the camera eases back for a wider view, then a beat of quiet before the
 // mode-select menu reopens (standing in for a proper post-match/loading flow,
 // which doesn't exist yet).
@@ -36,7 +38,7 @@ using UnityEngine;
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
 {
-    public enum Mode { None, Deathmatch, CaptureTheFlag, Gridlock, Knockout, DeathZoneTest }
+    public enum Mode { None, Deathmatch, CaptureTheFlag, Gridlock, Wreckoning, DeathZoneTest }
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
@@ -71,7 +73,7 @@ public class MatchModeManager : MonoBehaviour
     private ControlZone controlZone;
 
     // Every currently-active car/weapon/AI, regardless of mode - 2 for
-    // everything but Knockout's 4. The shared end-of-match cinematic locks
+    // everything but Wreckoning's 4. The shared end-of-match cinematic locks
     // and settle-checks whatever's in these, so it scales to either roster
     // size with no special-casing.
     private readonly List<CarController> allCars = new List<CarController>();
@@ -101,8 +103,8 @@ public class MatchModeManager : MonoBehaviour
     void OnDestroy() => Unsubscribe();
 
     // Rebuilds the roster from every currently-ACTIVE TeamMember - call this
-    // again after activating/deactivating cars (e.g. once Knockout's extra two
-    // are switched on) so the roster reflects who's actually in play.
+    // again after activating/deactivating cars (e.g. once Wreckoning's extra
+    // two are switched on) so the roster reflects who's actually in play.
     void FindCombatants()
     {
         playerHealth = null;
@@ -124,7 +126,7 @@ public class MatchModeManager : MonoBehaviour
             if (ai != null) allAI.Add(ai);
 
             // "Primary" per team, for the 2-car modes' kill-counting/HUD -
-            // whichever is found first when there's more than one (Knockout
+            // whichever is found first when there's more than one (Wreckoning
             // doesn't use these at all, so which one hardly matters there).
             if (tm.team == Team.Player)
             {
@@ -160,9 +162,9 @@ public class MatchModeManager : MonoBehaviour
         // regardless of what state the last match's end sequence left things in.
         LockControls(false);
         if (cameraFollow != null) cameraFollow.ResetZoomImmediate();
-        // Always restore Knockout's arena/extra cars/suspended-respawns first -
-        // safe even if a series wasn't running - so leaving that mode never
-        // leaves anything behind for whatever's picked next.
+        // Always restore Wreckoning's arena/extra cars/suspended-respawns
+        // first - safe even if a series wasn't running - so leaving that mode
+        // never leaves anything behind for whatever's picked next.
         if (knockoutManager != null) knockoutManager.Cleanup();
 
         CurrentMode = mode;
@@ -181,7 +183,7 @@ public class MatchModeManager : MonoBehaviour
             return;
         }
 
-        if (mode == Mode.Knockout)
+        if (mode == Mode.Wreckoning)
         {
             if (knockoutManager != null)
             {
@@ -255,7 +257,7 @@ public class MatchModeManager : MonoBehaviour
     void Update()
     {
         if (!matchRunning) return;
-        if (CurrentMode == Mode.Knockout) return; // KnockoutManager runs its own loop entirely
+        if (CurrentMode == Mode.Wreckoning) return; // KnockoutManager runs its own loop entirely
 
         if (CurrentMode == Mode.Gridlock)
         {
