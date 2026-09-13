@@ -8,11 +8,17 @@ using UnityEngine;
 // drops the car back in. CancelPendingRespawns() lets MatchModeManager cut
 // this short the instant a match ends, so a losing car can't pop back to life
 // (and hijack the shared countdown label) mid-victory-cinematic.
+// RespawnsSuspended goes further: while true, a death never starts a respawn
+// countdown at all (though the shake/flash juice still plays) - Knockout sets
+// this for the whole series, since a car eliminated mid-round should just stay
+// down until KnockoutManager resets everyone for the next round.
 [RequireComponent(typeof(ScreenFx))]
 public class MatchDirector : MonoBehaviour
 {
     [Header("Respawn")]
     public int respawnSeconds = 5;
+
+    public bool RespawnsSuspended { get; set; }
 
     [Header("Kill juice")]
     public float shakeDuration = 0.5f;
@@ -64,6 +70,8 @@ public class MatchDirector : MonoBehaviour
 
         if (cameraFollow != null && GameSettings.ScreenShakeOnElimination) cameraFollow.Shake(shakeDuration, shakeMagnitude);
         if (screenFx != null && GameSettings.ScreenFlashOnElimination) screenFx.Flash();
+
+        if (RespawnsSuspended) return; // Knockout - this car is out until the round resets
 
         string label = isPlayer ? "Respawning in:" : "Enemy respawns in:";
         StartCoroutine(RespawnRoutine(respawner, label, isPlayer));

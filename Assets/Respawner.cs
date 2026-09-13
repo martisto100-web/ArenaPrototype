@@ -20,10 +20,29 @@ public class Respawner : MonoBehaviour
 
     private Vector3 spawnPos;
     private Quaternion spawnRot;
+    private Vector3? overridePos;    // set by KnockoutManager for its bigger-arena bases
+    private Quaternion? overrideRot;
 
-    // The car's original placement, cached in Awake. TestDummy pins to this.
-    public Vector3 SpawnPosition => spawnPos;
-    public Quaternion SpawnRotation => spawnRot;
+    // The car's original placement, cached in Awake (or the current override,
+    // if one's been set) - TestDummy pins to this, and it's where Respawn()
+    // drops the car back in.
+    public Vector3 SpawnPosition => overridePos ?? spawnPos;
+    public Quaternion SpawnRotation => overrideRot ?? spawnRot;
+
+    // Knockout uses this to drop cars at team bases in its own, bigger arena
+    // instead of this car's normal scene-authored spot. ClearSpawnOverride()
+    // restores normal behaviour for every other mode.
+    public void SetSpawnOverride(Vector3 pos, Quaternion rot)
+    {
+        overridePos = pos;
+        overrideRot = rot;
+    }
+
+    public void ClearSpawnOverride()
+    {
+        overridePos = null;
+        overrideRot = null;
+    }
 
     private Health health;
     private Rigidbody body;
@@ -93,7 +112,7 @@ public class Respawner : MonoBehaviour
 
     IEnumerator RespawnRoutine()
     {
-        transform.SetPositionAndRotation(spawnPos + Vector3.up * dropHeight, spawnRot);
+        transform.SetPositionAndRotation(SpawnPosition + Vector3.up * dropHeight, SpawnRotation);
         health.Revive();
 
         if (bodyCollider != null) bodyCollider.enabled = true;

@@ -1,20 +1,29 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// ATTACH THIS TO: the EnemyCar root, alongside CarController + Weapon + Health.
-// Feeds CarController/Weapon through IVehicleInput, so the enemy drives and
-// shoots with the exact same stats as the player.
+// ATTACH THIS TO: any AI-driven vehicle, alongside CarController + Weapon + Health.
+// Despite the name, this drives ANY side now, not just "the enemy" - an ally
+// bot in Knockout uses the exact same script as the red cars, just with
+// TeamMember.team = Player. Feeds CarController/Weapon through IVehicleInput,
+// so it drives and shoots with the exact same stats as anything else using
+// those components.
 //
-// Playstyle: it never charges the player. It holds a stand-off distance and
+// Targeting is team-based: target is always the nearest living car on the
+// OPPOSING team (found via TeamMember), re-picked whenever the current one
+// stops being valid (dead, or gone) - so this scales from 1v1 up to 2v2
+// without any per-mode special-casing. "Valid" also covers a permanently-dead
+// car in a no-respawn round (Knockout) the same way it covers a mid-respawn
+// one elsewhere - either way, this AI just moves on to whoever's left.
+//
+// Playstyle: it never charges its target. It holds a stand-off distance and
 // circles, flipping orbit direction at random intervals, drifting with a bit
-// of wander, sidestepping the player's bullets, and steering around obstacles.
+// of wander, sidestepping incoming bullets, and steering around obstacles.
 // The more hurt it is, the wider it orbits and the twitchier it dodges.
 [RequireComponent(typeof(CarController))]
 public class EnemyDriverAI : MonoBehaviour, IVehicleInput
 {
     [Header("Target")]
-    public Transform target;                       // the player; auto-found by tag if left empty
-    public string targetTag = "Player";
+    public Transform target;                       // nearest opposing car; auto-found/re-found, no need to set
     public float retargetInterval = 1f;
 
     [Header("Stand-off distance (metres)")]
@@ -58,7 +67,6 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
     private Health health;
     private Collider selfCollider;
     private Team myTeam = Team.Enemy;
-    private Respawner targetRespawner;
     private float retargetTimer;
     private int orbitDir = 1;
     private float orbitFlipTimer;
@@ -87,14 +95,43 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
         AcquireTarget();
     }
 
+    // Nearest living car on the OTHER team. Called whenever the current target
+    // isn't valid any more (see IsValidTarget) - if nothing qualifies right
+    // now (whole opposing team down, or just this instant between deaths),
+    // target ends up null and Update() falls back to Roam() until one does.
     void AcquireTarget()
     {
-        if (target == null)
+        Transform best = null;
+        float bestSqr = float.MaxValue;
+        Vector3 selfPos = transform.position;
+
+        foreach (TeamMember tm in FindObjectsByType<TeamMember>(FindObjectsSortMode.None))
         {
-            GameObject go = GameObject.FindGameObjectWithTag(targetTag);
-            if (go != null) target = go.transform;
+            if (tm.team == myTeam) continue;
+            if (!IsValidTarget(tm.transform)) continue;
+
+            float d = (tm.transform.position - selfPos).sqrMagnitude;
+            if (d < bestSqr)
+            {
+                bestSqr = d;
+                best = tm.transform;
+            }
         }
-        if (target != null) targetRespawner = target.GetComponent<Respawner>();
+
+        target = best;
+    }
+
+    // A car counts as targetable while it's alive and not mid-death-freeze /
+    // mid-drop-in. Once a Respawner-less or permanently-dead car (Knockout,
+    // mid-round) fails this, AcquireTarget simply stops considering it.
+    static bool IsValidTarget(Transform t)
+    {
+        if (t == null) return false;
+        Health h = t.GetComponent<Health>();
+        if (h == null || h.IsDead) return false;
+        Respawner r = t.GetComponent<Respawner>();
+        if (r != null && r.IsDead) return false;
+        return true;
     }
 
     void ScheduleOrbitFlip()
@@ -104,7 +141,7 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
 
     void Update()
     {
-        if (target == null)
+        if (!IsValidTarget(target))
         {
             retargetTimer -= Time.deltaTime;
             if (retargetTimer <= 0f)
@@ -114,10 +151,9 @@ public class EnemyDriverAI : MonoBehaviour, IVehicleInput
             }
         }
 
-        // No live target (none found, or it's dead / dropping back in): keep
-        // moving — roam the arena instead of standing still.
-        bool targetLive = target != null && (targetRespawner == null || !targetRespawner.IsDead);
-        if (!targetLive)
+        // No live target (none found, whole opposing team down, or it's dead /
+        // dropping back in): keep moving — roam the arena instead of standing still.
+        if (!IsValidTarget(target))
         {
             Roam();
             return;

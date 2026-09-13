@@ -31,6 +31,12 @@ public class Weapon : MonoBehaviour
     [Range(0f, 0.4f)] public float firePitchJitter = 0.03f; // clips are already pitch-varied; keep this subtle
     [Range(0f, 0.5f)] public float fireVolumeJitter = 0.12f;
 
+    // false = normal. Set true to silence firing without touching `enabled` -
+    // Respawner re-enables this component on landing regardless of who else
+    // wants it held off (a post-match cinematic, a Knockout round countdown),
+    // so callers that need firing to actually stay off use this instead.
+    [System.NonSerialized] public bool inputLocked = false;
+
     private float cooldown = 0f;
     private IVehicleInput vehicleInput;
     private Team team = Team.Player;
@@ -72,6 +78,8 @@ public class Weapon : MonoBehaviour
 
     void Update()
     {
+        if (inputLocked) return;
+
         cooldown -= Time.deltaTime;
 
         Vector2 aimInput = GetAimInput();

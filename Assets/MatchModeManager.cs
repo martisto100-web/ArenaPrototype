@@ -1,12 +1,18 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // ATTACH THIS TO: the GameDirector object (alongside ModeMenu / ScreenFx).
-// Runs the three structured modes ModeMenu can start:
+// Runs the four structured modes ModeMenu can start:
 //   Deathmatch        - first team to killGoal eliminations wins; 5 min timer.
 //   Capture the Flag  - first team to captureGoal flag captures wins; 4 min timer.
 //   Gridlock          - first team to fill their OWN 0-100% bar to 100% wins;
 //                       3.5 min timer.
+//   Knockout          - 2v2, best-of-5 rounds, entirely owned by
+//                       KnockoutManager (its own arena, forcing zone, roster
+//                       and round-dot UI) - see that file. This class just
+//                       starts/stops it and relays its final result into the
+//                       same end-of-match cinematic every other mode uses.
 // In Deathmatch/CTF, if nobody hits the goal before the timer runs out the team
 // with more eliminations wins (captures are CTF's win condition, kills are just
 // its tiebreaker); if THAT'S also tied, DeathZone sudden death decides it -
@@ -21,15 +27,16 @@ using UnityEngine;
 // Flag setup for CTF, reading ControlZone occupancy for Gridlock, and the
 // post-match cinematic every mode ends with: a "VICTORY"/"DEFEAT"/"DRAW"
 // banner (from the local player's own point of view - there's no networked
-// opponent to word it neutrally for yet), controls locked so the cars coast to
-// a natural stop and the camera eases back for a wider view, then a beat of
-// quiet before the mode-select menu reopens (standing in for a proper
-// post-match/loading flow, which doesn't exist yet).
+// opponent to word it neutrally for yet), controls locked on every car
+// currently in play (2, or Knockout's 4) so they coast to a natural stop and
+// the camera eases back for a wider view, then a beat of quiet before the
+// mode-select menu reopens (standing in for a proper post-match/loading flow,
+// which doesn't exist yet).
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
 {
-    public enum Mode { None, Deathmatch, CaptureTheFlag, Gridlock, DeathZoneTest }
+    public enum Mode { None, Deathmatch, CaptureTheFlag, Gridlock, Knockout, DeathZoneTest }
 
     [Header("Deathmatch")]
     public int deathmatchKillGoal = 10;
@@ -55,17 +62,21 @@ public class MatchModeManager : MonoBehaviour
     private ModeMenu modeMenu;
     private MatchDirector matchDirector;
     private CameraFollow cameraFollow;
+    private KnockoutManager knockoutManager;
 
     private Health playerHealth;
     private Health enemyHealth;
-    private CarController playerCar;
-    private CarController enemyCar;
-    private Weapon playerWeapon;
-    private Weapon enemyWeapon;
-    private EnemyDriverAI enemyAI;
     private Flag playerFlag;        // the Player team's own flag/base
     private Flag enemyFlag;         // the Enemy team's own flag/base
     private ControlZone controlZone;
+
+    // Every currently-active car/weapon/AI, regardless of mode - 2 for
+    // everything but Knockout's 4. The shared end-of-match cinematic locks
+    // and settle-checks whatever's in these, so it scales to either roster
+    // size with no special-casing.
+    private readonly List<CarController> allCars = new List<CarController>();
+    private readonly List<Weapon> allWeapons = new List<Weapon>();
+    private readonly List<EnemyDriverAI> allAI = new List<EnemyDriverAI>();
 
     private int playerKills;
     private int enemyKills;
@@ -83,37 +94,45 @@ public class MatchModeManager : MonoBehaviour
         deathZone = GetComponent<DeathZone>();
         modeMenu = GetComponent<ModeMenu>();
         matchDirector = GetComponent<MatchDirector>();
+        knockoutManager = FindFirstObjectByType<KnockoutManager>();
         if (Camera.main != null) cameraFollow = Camera.main.GetComponent<CameraFollow>();
     }
 
     void OnDestroy() => Unsubscribe();
 
+    // Rebuilds the roster from every currently-ACTIVE TeamMember - call this
+    // again after activating/deactivating cars (e.g. once Knockout's extra two
+    // are switched on) so the roster reflects who's actually in play.
     void FindCombatants()
     {
         playerHealth = null;
         enemyHealth = null;
-        playerCar = null;
-        enemyCar = null;
-        playerWeapon = null;
-        enemyWeapon = null;
-        enemyAI = null;
+        allCars.Clear();
+        allWeapons.Clear();
+        allAI.Clear();
+
         foreach (TeamMember tm in FindObjectsByType<TeamMember>(FindObjectsSortMode.None))
         {
             Health h = tm.GetComponent<Health>();
             if (h == null) continue;
 
+            CarController car = tm.GetComponent<CarController>();
+            Weapon weapon = tm.GetComponent<Weapon>();
+            EnemyDriverAI ai = tm.GetComponent<EnemyDriverAI>();
+            if (car != null) allCars.Add(car);
+            if (weapon != null) allWeapons.Add(weapon);
+            if (ai != null) allAI.Add(ai);
+
+            // "Primary" per team, for the 2-car modes' kill-counting/HUD -
+            // whichever is found first when there's more than one (Knockout
+            // doesn't use these at all, so which one hardly matters there).
             if (tm.team == Team.Player)
             {
-                playerHealth = h;
-                playerCar = tm.GetComponent<CarController>();
-                playerWeapon = tm.GetComponent<Weapon>();
+                if (playerHealth == null) playerHealth = h;
             }
             else
             {
-                enemyHealth = h;
-                enemyCar = tm.GetComponent<CarController>();
-                enemyWeapon = tm.GetComponent<Weapon>();
-                enemyAI = tm.GetComponent<EnemyDriverAI>();
+                if (enemyHealth == null) enemyHealth = h;
             }
         }
 
@@ -141,6 +160,10 @@ public class MatchModeManager : MonoBehaviour
         // regardless of what state the last match's end sequence left things in.
         LockControls(false);
         if (cameraFollow != null) cameraFollow.ResetZoomImmediate();
+        // Always restore Knockout's arena/extra cars/suspended-respawns first -
+        // safe even if a series wasn't running - so leaving that mode never
+        // leaves anything behind for whatever's picked next.
+        if (knockoutManager != null) knockoutManager.Cleanup();
 
         CurrentMode = mode;
         matchRunning = mode != Mode.None;
@@ -156,6 +179,16 @@ public class MatchModeManager : MonoBehaviour
         {
             screenFx.HideHud();
             return;
+        }
+
+        if (mode == Mode.Knockout)
+        {
+            if (knockoutManager != null)
+            {
+                knockoutManager.BeginSeries();
+                FindCombatants(); // rebuild the roster now that the extra two cars are active
+            }
+            return; // KnockoutManager owns the score, HUD and timing from here
         }
 
         if (playerHealth != null) playerHealth.Died += OnPlayerDied;
@@ -190,6 +223,14 @@ public class MatchModeManager : MonoBehaviour
         UpdateHud();
     }
 
+    // Called by KnockoutManager once its best-of-5 series concludes - reuses
+    // the exact same Victory/Defeat/Draw cinematic every other mode ends with.
+    public void EndKnockoutSeries(Team? winner)
+    {
+        if (winner.HasValue) EndMatch(winner.Value);
+        else EndMatchDraw();
+    }
+
     void SetFlagsActive(bool on)
     {
         if (playerFlag != null) playerFlag.gameObject.SetActive(on);
@@ -214,6 +255,7 @@ public class MatchModeManager : MonoBehaviour
     void Update()
     {
         if (!matchRunning) return;
+        if (CurrentMode == Mode.Knockout) return; // KnockoutManager runs its own loop entirely
 
         if (CurrentMode == Mode.Gridlock)
         {
@@ -348,7 +390,7 @@ public class MatchModeManager : MonoBehaviour
     }
 
     // Locks controls (cars coast to a stop under their own decel curve, guns
-    // fall silent) and pulls the camera back; once both cars have actually
+    // fall silent) and pulls the camera back; once every car has actually
     // settled and the camera's done easing back (or postMatchMaxWait runs out
     // as a safety net), holds for one quiet beat, then reopens the menu.
     IEnumerator PlayEndSequence()
@@ -360,7 +402,7 @@ public class MatchModeManager : MonoBehaviour
         while (waited < postMatchMaxWait)
         {
             bool cameraSettled = cameraFollow == null || !cameraFollow.IsZooming;
-            if (cameraSettled && CarSettled(playerCar) && CarSettled(enemyCar)) break;
+            if (cameraSettled && AllCarsSettled()) break;
             waited += Time.deltaTime;
             yield return null;
         }
@@ -373,6 +415,15 @@ public class MatchModeManager : MonoBehaviour
         if (modeMenu != null) modeMenu.OpenMenu();
     }
 
+    bool AllCarsSettled()
+    {
+        foreach (CarController car in allCars)
+        {
+            if (!CarSettled(car)) return false;
+        }
+        return true;
+    }
+
     // A disabled CarController means Respawner already froze this car (dead or
     // mid drop-in) - nothing left to wait on either way.
     static bool CarSettled(CarController car)
@@ -383,11 +434,9 @@ public class MatchModeManager : MonoBehaviour
 
     void LockControls(bool locked)
     {
-        if (playerCar != null) playerCar.inputLocked = locked;
-        if (enemyCar != null) enemyCar.inputLocked = locked;
-        if (playerWeapon != null) playerWeapon.enabled = !locked;
-        if (enemyWeapon != null) enemyWeapon.enabled = !locked;
-        if (enemyAI != null) enemyAI.enabled = !locked;
+        foreach (CarController car in allCars) if (car != null) car.inputLocked = locked;
+        foreach (Weapon w in allWeapons) if (w != null) w.inputLocked = locked;
+        foreach (EnemyDriverAI ai in allAI) if (ai != null) ai.enabled = !locked;
     }
 
     // ---- HUD ----

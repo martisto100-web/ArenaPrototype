@@ -15,6 +15,9 @@ using UnityEngine.UI;
 //                         centre ControlZone; first to 100% wins (3.5 min
 //                         timer), higher % at the buzzer wins, exact tie is a
 //                         flat draw - no DeathZone for this one.
+//   "Knockout"          - 2v2, best-of-5 rounds, entirely run by
+//                         KnockoutManager on its own bigger arena - see that
+//                         file for the round/forcing-zone/roster-UI rules.
 //   "1v1 Arena"         - untimed free play against the live AI, no goal/HUD.
 //   "Test Arena"        - the enemy car becomes an inert TestDummy: 100 HP,
 //                         never moves or shoots, still explodes with the same
@@ -23,15 +26,15 @@ using UnityEngine.UI;
 //                         sudden death (zone shrinking immediately) against the
 //                         live AI, no goal/timer - for checking out the zone
 //                         without grinding out a real tie.
-// All six run the enemy AI normally except Test Arena. While the menu is open
-// the enemy AI is held disabled so it can't fire into the frozen scene.
+// All seven run the enemy AI normally except Test Arena. While the menu is
+// open the enemy AI is held disabled so it can't fire into the frozen scene.
 // "Resume" (or ESC again) closes without switching, once a mode is already
 // running. MatchModeManager also reopens this menu itself a few seconds after
-// a match ends (Deathmatch/CTF/Gridlock/DeathZone Test all count).
+// a match ends (Deathmatch/CTF/Gridlock/Knockout/DeathZone Test all count).
 [RequireComponent(typeof(MatchModeManager))]
 public class ModeMenu : MonoBehaviour
 {
-    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, Gridlock, DeathZoneTest }
+    private enum Mode { None, Arena1v1, Test, Deathmatch, CaptureTheFlag, Gridlock, Knockout, DeathZoneTest }
 
     private GameObject canvasGO;
     private GameObject resumeButton;
@@ -105,6 +108,7 @@ public class ModeMenu : MonoBehaviour
             case Mode.Deathmatch: return MatchModeManager.Mode.Deathmatch;
             case Mode.CaptureTheFlag: return MatchModeManager.Mode.CaptureTheFlag;
             case Mode.Gridlock: return MatchModeManager.Mode.Gridlock;
+            case Mode.Knockout: return MatchModeManager.Mode.Knockout;
             case Mode.DeathZoneTest: return MatchModeManager.Mode.DeathZoneTest;
             default: return MatchModeManager.Mode.None; // Arena1v1 / Test - free play, no structured match
         }
@@ -166,17 +170,18 @@ public class ModeMenu : MonoBehaviour
         Stretch(bg.rectTransform);
         bg.raycastTarget = true; // swallow taps meant for the game / joysticks
 
-        MakeLabel("WRAITH", canvasGO.transform, 80, FontStyle.Bold, new Vector2(0f, 420f), Color.white);
-        MakeLabel("select mode", canvasGO.transform, 30, FontStyle.Normal, new Vector2(0f, 362f),
+        MakeLabel("WRAITH", canvasGO.transform, 70, FontStyle.Bold, new Vector2(0f, 450f), Color.white);
+        MakeLabel("select mode", canvasGO.transform, 26, FontStyle.Normal, new Vector2(0f, 396f),
                   new Color(1f, 1f, 1f, 0.55f));
 
-        MakeButton("Deathmatch", canvasGO.transform, new Vector2(0f, 260f), () => Pick(Mode.Deathmatch));
-        MakeButton("Capture the Flag", canvasGO.transform, new Vector2(0f, 148f), () => Pick(Mode.CaptureTheFlag));
-        MakeButton("Gridlock", canvasGO.transform, new Vector2(0f, 36f), () => Pick(Mode.Gridlock));
-        MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, -76f), () => Pick(Mode.Arena1v1));
-        MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -188f), () => Pick(Mode.Test));
-        MakeButton("DeathZone Test", canvasGO.transform, new Vector2(0f, -300f), () => Pick(Mode.DeathZoneTest));
-        resumeButton = MakeButton("Resume", canvasGO.transform, new Vector2(0f, -412f), () => Close());
+        MakeButton("Deathmatch", canvasGO.transform, new Vector2(0f, 290f), () => Pick(Mode.Deathmatch));
+        MakeButton("Capture the Flag", canvasGO.transform, new Vector2(0f, 194f), () => Pick(Mode.CaptureTheFlag));
+        MakeButton("Gridlock", canvasGO.transform, new Vector2(0f, 98f), () => Pick(Mode.Gridlock));
+        MakeButton("Knockout", canvasGO.transform, new Vector2(0f, 2f), () => Pick(Mode.Knockout));
+        MakeButton("1v1 Arena", canvasGO.transform, new Vector2(0f, -94f), () => Pick(Mode.Arena1v1));
+        MakeButton("Test Arena", canvasGO.transform, new Vector2(0f, -190f), () => Pick(Mode.Test));
+        MakeButton("DeathZone Test", canvasGO.transform, new Vector2(0f, -286f), () => Pick(Mode.DeathZoneTest));
+        resumeButton = MakeButton("Resume", canvasGO.transform, new Vector2(0f, -382f), () => Close());
         resumeButton.SetActive(false);
     }
 
@@ -218,7 +223,7 @@ public class ModeMenu : MonoBehaviour
         Image img = MakeImage("Btn_" + label, parent, new Color(0.16f, 0.17f, 0.22f, 1f));
         RectTransform rt = img.rectTransform;
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(560f, 100f);
+        rt.sizeDelta = new Vector2(560f, 88f);
         rt.anchoredPosition = pos;
 
         Button btn = img.gameObject.AddComponent<Button>();
@@ -231,7 +236,7 @@ public class ModeMenu : MonoBehaviour
         btn.colors = cb;
         btn.onClick.AddListener(onClick);
 
-        Text t = MakeLabel(label, rt, 38, FontStyle.Bold, Vector2.zero, Color.white);
+        Text t = MakeLabel(label, rt, 34, FontStyle.Bold, Vector2.zero, Color.white);
         Stretch(t.rectTransform);
         return img.gameObject;
     }

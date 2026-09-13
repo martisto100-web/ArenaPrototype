@@ -1,23 +1,30 @@
 using UnityEngine;
 
-// ATTACH THIS TO: the GameDirector object.
-// Sudden-death hazard for Deathmatch / Capture the Flag: when both teams are
-// tied at the final buzzer, MatchModeManager calls BeginShrinking() and this
-// takes over. A circular "safe" ring shrinks from covering the whole arena down
-// to nothing over shrinkDuration seconds; any car caught outside it takes
-// escalating damage per second (see stageTimes/stageDamage). The visual is a
-// translucent, fiery orange annulus covering everything beyond the safe ring,
-// plus a ring of ember particles riding the shrinking edge — all built at
-// runtime, no art, same approach as DamageFx/HealthBar. Loosely modelled on
-// battle-royale "storm" zones (Fortnite/PUBG/Apex) but reskinned
-// fiery/transparent for this arena rather than copying any one game's look.
+// ATTACH THIS TO: the GameDirector object (Deathmatch/CTF's instance), or a
+// standalone object with its own tuning (Knockout's — see KnockoutManager).
+// Sudden-death hazard: when called, a circular "safe" ring shrinks from
+// covering the whole arena down to nothing, and any car caught outside it
+// takes escalating damage per second. Both the shrink SPEED and the damage
+// use the same "stage" shape - a list of (elapsed-seconds, value) pairs, the
+// value holding at the last one reached forever after - so a constant shrink
+// (Deathmatch: one stage) and an escalating one (Knockout: several) are just
+// different data on the same mechanism; see shrinkRateStageTimes/Rates and
+// stageTimes/stageDamage. The visual is a translucent, fiery orange annulus
+// covering everything beyond the safe ring, plus a ring of ember particles
+// riding the shrinking edge — all built at runtime, no art, same approach as
+// DamageFx/HealthBar. Loosely modelled on battle-royale "storm" zones
+// (Fortnite/PUBG/Apex) but reskinned fiery/transparent for this arena rather
+// than copying any one game's look.
 public class DeathZone : MonoBehaviour
 {
     [Header("Shrink")]
     public Vector3 center = Vector3.zero;
     public float startRadius = 36f;    // big enough to clear the 50x50 plane's corners (~35.4)
     public float outerRadius = 45f;    // the annulus's fixed outer edge - just needs to clear the plane
-    public float shrinkDuration = 20f; // seconds until the safe ring hits 0
+
+    [Header("Shrink rate stages (seconds since BeginShrinking -> radius units/sec)")]
+    public float[] shrinkRateStageTimes = { 0f };    // Deathmatch: one constant stage, startRadius/20s
+    public float[] shrinkRateStages = { 1.8f };
 
     [Header("Damage stages (seconds elapsed -> damage per second)")]
     public float[] stageTimes = { 0f, 5f, 10f, 15f };
@@ -69,20 +76,25 @@ public class DeathZone : MonoBehaviour
         if (!Active) return;
 
         elapsed += Time.deltaTime;
-        float k = Mathf.Clamp01(elapsed / shrinkDuration);
-        CurrentSafeRadius = Mathf.Lerp(startRadius, 0f, k);
+        float rate = StageValue(shrinkRateStageTimes, shrinkRateStages, 1.8f);
+        CurrentSafeRadius = Mathf.Max(0f, CurrentSafeRadius - rate * Time.deltaTime);
         UpdateVisual();
         ApplyDamage();
     }
 
-    float CurrentDamagePerSecond()
+    float CurrentDamagePerSecond() => StageValue(stageTimes, stageDamage, 1f);
+
+    // Shared by the shrink-rate and damage schedules: whichever stage's time
+    // has most recently been crossed wins, holding at the last one forever
+    // once elapsed runs past it.
+    float StageValue(float[] times, float[] values, float fallback)
     {
-        float dmg = stageDamage.Length > 0 ? stageDamage[0] : 1f;
-        for (int i = 0; i < stageTimes.Length && i < stageDamage.Length; i++)
+        float result = values.Length > 0 ? values[0] : fallback;
+        for (int i = 0; i < times.Length && i < values.Length; i++)
         {
-            if (elapsed >= stageTimes[i]) dmg = stageDamage[i];
+            if (elapsed >= times[i]) result = values[i];
         }
-        return dmg;
+        return result;
     }
 
     void ApplyDamage()
