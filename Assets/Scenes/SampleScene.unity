@@ -379,7 +379,7 @@ Transform:
   m_GameObject: {fileID: 90553701}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalPosition: {x: 0, y: 0.5, z: -20}
   m_LocalScale: {x: 2, y: 1, z: 3.5}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3174,6 +3174,98 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1787467737
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1787467739}
+  - component: {fileID: 1787467738}
+  m_Layer: 0
+  m_Name: EnemyBase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1787467738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1787467737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a9d1f62507436040b68031cf430096c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BaseMarker
+  color: {r: 0.85, g: 0.15, b: 0.12, a: 0.28}
+  radius: 3
+--- !u!4 &1787467739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1787467737}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1873041942
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1873041944}
+  - component: {fileID: 1873041943}
+  m_Layer: 0
+  m_Name: PlayerBase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1873041943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873041942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a9d1f62507436040b68031cf430096c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BaseMarker
+  color: {r: 0.15, g: 0.4, b: 0.95, a: 0.28}
+  radius: 3
+--- !u!4 &1873041944
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873041942}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: -20}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1931961792
 GameObject:
   m_ObjectHideFlags: 0
@@ -3217,13 +3309,16 @@ MonoBehaviour:
   redBaseRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
   roundsToWin: 3
   maxRounds: 5
-  preRoundDelay: 3
+  preRoundCountdown: 3
   postRoundDelay: 3
   zoneStartDelay: 30
   planeScale: 10
   wallDistance: 51
   wallHeight: 6
   wallThickness: 2
+  baseMarkerRadius: 5
+  blueBaseColor: {r: 0.15, g: 0.4, b: 0.95, a: 0.28}
+  redBaseColor: {r: 0.85, g: 0.15, b: 0.12, a: 0.28}
 --- !u!114 &1931961794
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3249,6 +3344,8 @@ MonoBehaviour:
   blueBorder: {r: 0.25, g: 0.5, b: 1, a: 1}
   redBorder: {r: 0.95, g: 0.25, b: 0.2, a: 1}
   crossPopDuration: 0.45
+  crossDropHeight: 70
+  crossOvershoot: 1.7
 --- !u!114 &1931961795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3736,3 +3833,5 @@ SceneRoots:
   - {fileID: 207634940}
   - {fileID: 2054877045}
   - {fileID: 1931961796}
+  - {fileID: 1873041944}
+  - {fileID: 1787467739}

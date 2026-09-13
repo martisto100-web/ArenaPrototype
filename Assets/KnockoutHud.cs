@@ -10,8 +10,9 @@ using UnityEngine.UI;
 //     blue/red/tie as each round of the best-of-5 concludes.
 //   - Two small roster squares upper-left (Blue team: "Blue 1"/"Blue 2") and
 //     two upper-right (Red team) - a stand-in for real portraits until a
-//     design pass. SetEliminated(slot, true) gently scales/fades a red "X"
-//     over that player's square; false clears it (a round reset).
+//     design pass. SetEliminated(slot, true) drops a red "X" onto that
+//     player's square from above with a gentle settling bounce; false clears
+//     it (a round reset).
 // Slot order for the roster methods: 0 = Blue 1, 1 = Blue 2, 2 = Red 1, 3 = Red 2.
 public class KnockoutHud : MonoBehaviour
 {
@@ -34,7 +35,9 @@ public class KnockoutHud : MonoBehaviour
     public Color redBorder = new Color(0.95f, 0.25f, 0.2f, 1f);
 
     [Header("Elimination animation")]
-    public float crossPopDuration = 0.45f;
+    public float crossPopDuration = 0.4f;
+    public float crossDropHeight = 70f;    // how far above the square the X starts its fall (UI units)
+    public float crossOvershoot = 1.7f;    // "ease-out-back" strength - how much it dips past the landing before settling
 
     private GameObject canvasGO;
     private Image[] dots;
@@ -91,33 +94,47 @@ public class KnockoutHud : MonoBehaviour
         Text t = crosses[slot];
         if (t == null) return;
         t.gameObject.SetActive(eliminated);
-        t.rectTransform.localScale = Vector3.one;
+        t.rectTransform.anchoredPosition = Vector2.zero;
         Color c = t.color;
         c.a = eliminated ? 1f : 0f;
         t.color = c;
     }
 
-    // Gentle pop: scales up from small + fades in, ease-out.
+    // Drops from crossDropHeight above the square down onto it, landing with a
+    // small overshoot-and-settle bounce ("ease-out-back") - a gentle slam
+    // rather than a straight scale-in pop.
     IEnumerator PopCross(int slot)
     {
         Text t = crosses[slot];
         t.gameObject.SetActive(true);
+        RectTransform rt = t.rectTransform;
+
         float time = 0f;
         while (time < crossPopDuration)
         {
             time += Time.deltaTime;
             float k = Mathf.Clamp01(time / crossPopDuration);
-            float eased = 1f - (1f - k) * (1f - k);
-            t.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.3f, 1f, eased);
+            float eased = EaseOutBack(k);
+            // LerpUnclamped so the overshoot (eased briefly > 1) actually shows.
+            rt.anchoredPosition = new Vector2(0f, Mathf.LerpUnclamped(crossDropHeight, 0f, eased));
+
             Color c = t.color;
-            c.a = eased;
+            c.a = Mathf.Clamp01(k / 0.4f); // fully visible well before it lands
             t.color = c;
             yield return null;
         }
-        t.rectTransform.localScale = Vector3.one;
+        rt.anchoredPosition = Vector2.zero;
         Color final = t.color;
         final.a = 1f;
         t.color = final;
+    }
+
+    float EaseOutBack(float t)
+    {
+        float c1 = crossOvershoot;
+        float c3 = c1 + 1f;
+        float p = t - 1f;
+        return 1f + c3 * p * p * p + c1 * p * p;
     }
 
     // ---- build ----

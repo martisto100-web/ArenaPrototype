@@ -2,11 +2,13 @@ using System;
 using UnityEngine;
 
 // ATTACH THIS TO: an empty GameObject sitting at each team's base (e.g.
-// "BlueFlag" near the Wraith's spawn, "RedFlag" near the EnemyCar's) — placed by
-// MatchModeManager's Capture The Flag setup. Builds its own pole+cloth visual
-// and a flat base-pad marker at runtime (no art assets, same approach as
-// HealthBar/DamageFx). MatchModeManager wires the two Flags together with
-// SetOther() and toggles them active only during Capture the Flag.
+// "PlayerFlag"/"EnemyFlag", same spot as that team's always-on `BaseMarker`) —
+// placed by MatchModeManager's Capture The Flag setup. Builds its own
+// pole+cloth visual at runtime (no art assets, same approach as
+// HealthBar/DamageFx) - the base-pad circle itself is `BaseMarker`'s job now,
+// shared with every other mode, not drawn here any more. MatchModeManager
+// wires the two Flags together with SetOther() and toggles them active only
+// during Capture the Flag.
 //
 // Only the OPPOSING team can pick this flag up (drive into it). Carrying it
 // cuts the carrier's CarController.speedMultiplier by carrierSpeedPenalty until
@@ -57,7 +59,6 @@ public class Flag : MonoBehaviour
 
     private GameObject visual; // pole + cloth - toggled for the drop-blink
     private Transform cloth;
-    private GameObject basePad;
 
     void Awake()
     {
@@ -210,7 +211,7 @@ public class Flag : MonoBehaviour
         SetVisualVisible(true);
     }
 
-    // ---- runtime visual: pole + cloth + a flat base-pad marking the capture zone ----
+    // ---- runtime visual: pole + cloth ----
 
     void BuildVisual()
     {
@@ -241,25 +242,10 @@ public class Flag : MonoBehaviour
         clothR.receiveShadows = false;
         clothR.material = new Material(Shader.Find("Sprites/Default")) { color = flagColor };
         cloth = clothGO.transform;
-
-        basePad = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        basePad.name = "BasePad";
-        Destroy(basePad.GetComponent<Collider>());
-        basePad.transform.position = homePos + Vector3.up * 0.02f;
-        basePad.transform.localScale = new Vector3(captureRadius * 2f, 0.02f, captureRadius * 2f);
-        MeshRenderer padR = basePad.GetComponent<MeshRenderer>();
-        padR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        padR.receiveShadows = false;
-        padR.material = new Material(Shader.Find("Sprites/Default")) { color = new Color(flagColor.r, flagColor.g, flagColor.b, 0.28f) };
     }
 
     void SetVisualVisible(bool on)
     {
         if (visual != null) visual.SetActive(on);
-    }
-
-    void OnDestroy()
-    {
-        if (basePad != null) Destroy(basePad);
     }
 }

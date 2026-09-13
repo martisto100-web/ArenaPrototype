@@ -47,7 +47,7 @@ public class KnockoutManager : MonoBehaviour
     [Header("Series")]
     public int roundsToWin = 3;
     public int maxRounds = 5;
-    public float preRoundDelay = 3f;   // "ROUND N" hold, cars locked, before it starts
+    public int preRoundCountdown = 3;  // "Round starts in: N" ticks down from this, cars locked, before it starts
     public float postRoundDelay = 3f;  // round-result banner hold before the next reset
 
     [Header("Forcing zone timing (this mode's own DeathZone tuning lives on that component)")]
@@ -58,6 +58,11 @@ public class KnockoutManager : MonoBehaviour
     public float wallDistance = 51f;
     public float wallHeight = 6f;
     public float wallThickness = 2f;
+
+    [Header("Team base markers - one circle per team, at the midpoint of its two cars' bases")]
+    public float baseMarkerRadius = 5f; // cars sit at the edge of this, not mandatory to be inside it
+    public Color blueBaseColor = new Color(0.15f, 0.4f, 0.95f, 0.28f);
+    public Color redBaseColor = new Color(0.85f, 0.15f, 0.12f, 0.28f);
 
     private static readonly string[] OriginalArenaNames =
     {
@@ -284,8 +289,12 @@ public class KnockoutManager : MonoBehaviour
     {
         ResetAllCarsForRound();
         LockAllCars(true);
-        screenFx.ShowMessage("ROUND " + roundNumber);
-        yield return new WaitForSeconds(preRoundDelay);
+
+        for (int n = Mathf.Max(1, preRoundCountdown); n >= 1; n--)
+        {
+            screenFx.ShowCountdown("Round starts in:", n);
+            yield return new WaitForSeconds(1f);
+        }
         screenFx.HideCountdown();
         LockAllCars(false);
 
@@ -408,6 +417,23 @@ public class KnockoutManager : MonoBehaviour
         BuildWall("S", new Vector3(0f, wallHeight * 0.5f, -wallDistance), new Vector3(wallSpan, wallHeight, wallThickness));
         BuildWall("E", new Vector3(wallDistance, wallHeight * 0.5f, 0f), new Vector3(wallThickness, wallHeight, wallSpan));
         BuildWall("W", new Vector3(-wallDistance, wallHeight * 0.5f, 0f), new Vector3(wallThickness, wallHeight, wallSpan));
+
+        BuildBaseMarker("BlueBase", Vector3.Lerp(blueBase1, blueBase2, 0.5f), blueBaseColor);
+        BuildBaseMarker("RedBase", Vector3.Lerp(redBase1, redBase2, 0.5f), redBaseColor);
+    }
+
+    void BuildBaseMarker(string markerName, Vector3 pos, Color color)
+    {
+        GameObject go = new GameObject(markerName);
+        go.SetActive(false); // configure BaseMarker's fields before its Awake() builds the visual
+        go.transform.SetParent(knockoutArenaRoot.transform, false);
+        go.transform.position = pos;
+
+        BaseMarker marker = go.AddComponent<BaseMarker>();
+        marker.radius = baseMarkerRadius;
+        marker.color = color;
+
+        go.SetActive(true);
     }
 
     void BuildWall(string dir, Vector3 pos, Vector3 size)
