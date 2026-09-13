@@ -167,6 +167,23 @@ public class MatchModeManager : MonoBehaviour
         // never leaves anything behind for whatever's picked next.
         if (knockoutManager != null) knockoutManager.Cleanup();
 
+        // Cancel any respawn countdown left running from whatever just ended
+        // (e.g. ESC out mid-"Enemy respawns in:") and clear its on-screen
+        // text - otherwise it'd sit there frozen through the new mode until
+        // something else happened to overwrite it.
+        if (matchDirector != null) matchDirector.CancelPendingRespawns();
+        screenFx.HideCountdown();
+
+        // Every mode switch is a hard reset for whoever's currently in play:
+        // full health, back at THIS mode's own spawn point - never wherever
+        // the last mode happened to leave the car (which, coming from
+        // Wreckoning's much bigger arena, could be well outside a smaller
+        // arena's floor and fall straight into the void). Wreckoning skips
+        // this - BeginSeries()'s own first-round reset below already
+        // repositions all four cars at its own bases a moment later, so
+        // doing it here too would just be a redundant extra drop-in.
+        if (mode != Mode.Wreckoning) ResetCombatantsToSpawn();
+
         CurrentMode = mode;
         matchRunning = mode != Mode.None;
         suddenDeath = false;
@@ -177,11 +194,13 @@ public class MatchModeManager : MonoBehaviour
         SetFlagsActive(mode == Mode.CaptureTheFlag);
         SetZoneActive(mode == Mode.Gridlock);
 
-        if (!matchRunning)
-        {
-            screenFx.HideHud();
-            return;
-        }
+        // Every mode's own score/timer readout starts blank - otherwise
+        // whatever the last mode last wrote here (a Gridlock %, a Deathmatch
+        // kill count...) would sit there frozen through a mode - like
+        // Wreckoning, or 1v1/Test - that never calls UpdateHud() itself.
+        screenFx.HideHud();
+
+        if (!matchRunning) return;
 
         if (mode == Mode.Wreckoning)
         {
@@ -231,6 +250,20 @@ public class MatchModeManager : MonoBehaviour
     {
         if (winner.HasValue) EndMatch(winner.Value);
         else EndMatchDraw();
+    }
+
+    // Sends every currently-ACTIVE car through the same drop-in Respawner
+    // already uses for a death: full health, back at its own scene-authored
+    // spawn point. Only touches active Respawners, so Wreckoning's extra two
+    // (already deactivated by Cleanup() above if we're leaving that mode, or
+    // still inactive if we're not) are correctly left untouched.
+    void ResetCombatantsToSpawn()
+    {
+        foreach (Respawner r in FindObjectsByType<Respawner>(FindObjectsSortMode.None))
+        {
+            r.ClearSpawnOverride(); // safety net - nothing should have one set outside Wreckoning
+            r.Respawn();
+        }
     }
 
     void SetFlagsActive(bool on)

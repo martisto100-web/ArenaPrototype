@@ -1523,7 +1523,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OffscreenMarkers
   enemyColor: {r: 0.95, g: 0.2, b: 0.16, a: 0.95}
-  allyColor: {r: 1, g: 0.84, b: 0.16, a: 0.95}
+  allyColor: {r: 0.25, g: 0.5, b: 1, a: 0.95}
   arrowSize: 62
   edgeMargin: 64
   playerTag: Player
