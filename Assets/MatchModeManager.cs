@@ -34,6 +34,9 @@ using UnityEngine;
 // the camera eases back for a wider view, then a beat of quiet before the
 // mode-select menu reopens (standing in for a proper post-match/loading flow,
 // which doesn't exist yet).
+// StartMatch also re-rolls every AI-driven Enemy-team car's Weapon.weaponType
+// (RandomizeEnemyWeapons) - a fresh 50/50 Machine Gun / Rocket Launcher pick
+// per enemy, every match/mode switch, independent of the player's own pick.
 [RequireComponent(typeof(ScreenFx))]
 [RequireComponent(typeof(DeathZone))]
 public class MatchModeManager : MonoBehaviour
@@ -150,6 +153,27 @@ public class MatchModeManager : MonoBehaviour
         controlZone = FindFirstObjectByType<ControlZone>(FindObjectsInactive.Include);
     }
 
+    // Every AI-driven car on the Enemy team gets a fresh, independent 50/50
+    // roll between Machine Gun and Rocket Launcher each time a match starts
+    // (including a mode switch) - so you don't know going in which loadout
+    // an opponent has, and in Wreckoning the two enemies can end up with the
+    // same or different weapons. Only the enemy side: the player's own
+    // Weapon is set by ModeMenu's weapon pick, and Wreckoning's ally bot
+    // (AllyCar, Team.Player) is left alone.
+    void RandomizeEnemyWeapons()
+    {
+        foreach (Weapon w in allWeapons)
+        {
+            if (w == null) continue;
+            if (w.GetComponent<EnemyDriverAI>() == null) continue;
+
+            TeamMember tm = w.GetComponent<TeamMember>();
+            if (tm == null || tm.team != Team.Enemy) continue;
+
+            w.weaponType = Random.value < 0.5f ? Weapon.WeaponType.MachineGun : Weapon.WeaponType.RocketLauncher;
+        }
+    }
+
     // ---- called by ModeMenu on every mode pick (including switching to 1v1 / Test / None) ----
 
     public void StartMatch(Mode mode)
@@ -157,6 +181,7 @@ public class MatchModeManager : MonoBehaviour
         StopAllCoroutines();
         Unsubscribe();
         FindCombatants();
+        RandomizeEnemyWeapons();
 
         // A new match always starts with full control and normal framing,
         // regardless of what state the last match's end sequence left things in.
@@ -208,6 +233,7 @@ public class MatchModeManager : MonoBehaviour
             {
                 knockoutManager.BeginSeries();
                 FindCombatants(); // rebuild the roster now that the extra two cars are active
+                RandomizeEnemyWeapons(); // covers EnemyCar2, which wasn't in the roster for the call above
             }
             return; // KnockoutManager owns the score, HUD and timing from here
         }

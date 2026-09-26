@@ -239,9 +239,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed978d4e3fa0cbb4ba4fe8df3e1f8406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  weaponType: 0
   projectilePrefab: {fileID: 8580805364492644824, guid: 20d71df95b3324c4798745c67a41bbad, type: 3}
   firePoint: {fileID: 173659822}
   fireRate: 0.25
+  rocketPrefab: {fileID: 7300805364492644900, guid: 8daf1caefb0c4874e8194476871b171f, type: 3}
+  rocketFireRate: 2
+  rocketTargetRange: 30
+  rocketTargetConeHalfAngle: 18
   aimJoystick: {fileID: 1257424652}
   fireDeadzone: 0.3
   fireShots: []
@@ -451,7 +456,6 @@ MonoBehaviour:
   aimJoystick: {fileID: 0}
   horizontalAxis: Horizontal
   verticalAxis: Vertical
-  fireMouseButton: 0
 --- !u!114 &90553713
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -808,9 +812,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed978d4e3fa0cbb4ba4fe8df3e1f8406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  weaponType: 0
   projectilePrefab: {fileID: 8580805364492644824, guid: 20d71df95b3324c4798745c67a41bbad, type: 3}
   firePoint: {fileID: 1151413448}
   fireRate: 0.25
+  rocketPrefab: {fileID: 7300805364492644900, guid: 8daf1caefb0c4874e8194476871b171f, type: 3}
+  rocketFireRate: 2
+  rocketTargetRange: 30
+  rocketTargetConeHalfAngle: 18
   aimJoystick: {fileID: 0}
   fireDeadzone: 0.3
   fireShots: []
@@ -1540,6 +1549,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78dd4732758985845aee244f5c31c12d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ModeMenu
+  menuTransitionDuration: 0.28
 --- !u!114 &536706265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2628,9 +2638,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed978d4e3fa0cbb4ba4fe8df3e1f8406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  weaponType: 0
   projectilePrefab: {fileID: 8580805364492644824, guid: 20d71df95b3324c4798745c67a41bbad, type: 3}
   firePoint: {fileID: 1712488922}
   fireRate: 0.25
+  rocketPrefab: {fileID: 7300805364492644900, guid: 8daf1caefb0c4874e8194476871b171f, type: 3}
+  rocketFireRate: 2
+  rocketTargetRange: 30
+  rocketTargetConeHalfAngle: 18
   aimJoystick: {fileID: 0}
   fireDeadzone: 0.3
   fireShots: []
@@ -3584,9 +3599,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed978d4e3fa0cbb4ba4fe8df3e1f8406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  weaponType: 0
   projectilePrefab: {fileID: 8580805364492644824, guid: 20d71df95b3324c4798745c67a41bbad, type: 3}
   firePoint: {fileID: 114636063}
   fireRate: 0.25
+  rocketPrefab: {fileID: 7300805364492644900, guid: 8daf1caefb0c4874e8194476871b171f, type: 3}
+  rocketFireRate: 2
+  rocketTargetRange: 30
+  rocketTargetConeHalfAngle: 18
   aimJoystick: {fileID: 0}
   fireDeadzone: 0.3
   fireShots: []

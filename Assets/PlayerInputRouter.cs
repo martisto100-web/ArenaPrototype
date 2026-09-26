@@ -1,37 +1,36 @@
 using UnityEngine;
 
 // ATTACH THIS TO: the Wraith / player-car root (alongside CarController + Weapon).
-// One IVehicleInput that the human uses on every platform:
+// One IVehicleInput that the human uses on every platform. Aiming/firing is
+// always the aim VirtualJoystick's direction, on mobile and PC alike -
+// there's no mouse-look aim mechanic. On PC/editor the aim stick is just
+// another on-screen UI element, so drag it with the mouse the same way a
+// thumb would on a touchscreen.
 //   - Mobile build  -> the two on-screen VirtualJoysticks (kept for release).
-//   - PC / editor    -> WASD to move, mouse to aim, hold left mouse to fire.
-// "Auto" picks by platform; force a mode from the Inspector if you want to
-// test the touch sticks on PC.
+//   - PC / editor    -> WASD to move; aim stick is mouse-dragged like touch.
+// "Auto" picks the move scheme by platform; force a mode from the Inspector
+// if you want to test the move touch stick on PC too.
 [RequireComponent(typeof(CarController))]
 public class PlayerInputRouter : MonoBehaviour, IVehicleInput
 {
     public enum Scheme { Auto, KeyboardMouse, TouchJoysticks }
 
-    [Header("Scheme")]
+    [Header("Scheme (movement only - aim always uses the joystick)")]
     public Scheme scheme = Scheme.Auto;
 
     [Header("Touch (filled from CarController/Weapon if left empty)")]
     public VirtualJoystick moveJoystick;
     public VirtualJoystick aimJoystick;
 
-    [Header("Keyboard / mouse")]
+    [Header("Keyboard / mouse (movement only)")]
     public string horizontalAxis = "Horizontal";
     public string verticalAxis = "Vertical";
-    public int fireMouseButton = 0;
 
     public Vector2 MoveInput { get; private set; }
     public Vector2 AimInput { get; private set; }
 
-    private Camera cam;
-
     void Awake()
     {
-        cam = Camera.main;
-
         // Reuse the joystick refs already wired on the vehicle's own components.
         if (moveJoystick == null)
         {
@@ -57,37 +56,10 @@ public class PlayerInputRouter : MonoBehaviour, IVehicleInput
 
     void Update()
     {
-        if (UseKeyboardMouse())
-        {
-            MoveInput = new Vector2(Input.GetAxisRaw(horizontalAxis), Input.GetAxisRaw(verticalAxis));
-            AimInput = ReadMouseAim();
-        }
-        else
-        {
-            MoveInput = moveJoystick != null ? moveJoystick.InputVector : Vector2.zero;
-            AimInput = aimJoystick != null ? aimJoystick.InputVector : Vector2.zero;
-        }
-    }
+        MoveInput = UseKeyboardMouse()
+            ? new Vector2(Input.GetAxisRaw(horizontalAxis), Input.GetAxisRaw(verticalAxis))
+            : (moveJoystick != null ? moveJoystick.InputVector : Vector2.zero);
 
-    // Aim at the mouse's point on the ground plane; only "pushed" (i.e. firing)
-    // while the fire button is held, so Weapon treats it like a stick past the
-    // deadzone.
-    Vector2 ReadMouseAim()
-    {
-        if (!Input.GetMouseButton(fireMouseButton)) return Vector2.zero;
-        if (cam == null) cam = Camera.main;
-        if (cam == null) return Vector2.zero;
-
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        Plane plane = new Plane(Vector3.up, new Vector3(0f, transform.position.y, 0f));
-        if (!plane.Raycast(ray, out float enter)) return Vector2.zero;
-
-        Vector3 aimPoint = ray.GetPoint(enter);
-        Vector3 dir = aimPoint - transform.position;
-        dir.y = 0f;
-        if (dir.sqrMagnitude < 0.0001f) return Vector2.zero;
-
-        dir.Normalize();
-        return new Vector2(dir.x, dir.z);
+        AimInput = aimJoystick != null ? aimJoystick.InputVector : Vector2.zero;
     }
 }

@@ -1,16 +1,18 @@
 using UnityEngine;
 
-// ATTACH THIS TO: your bullet/rocket prefab (not to the vehicle).
+// ATTACH THIS TO: your bullet prefab (not to the vehicle). The rocket launcher's
+// projectile is a separate prefab/script - see Rocket.cs - since homing don't
+// apply here; this stays the straight-line machine gun bullet.
 // Team is set by the Weapon that fires it; bullets pass through anything on the
-// same team (including the shooter) and through other bullets. Neutral objects
-// with no TeamMember (destructible props) can be hit by any bullet.
+// same team (including the shooter) and through other bullets/rockets. Neutral
+// objects with no TeamMember (destructible props) can be hit by any bullet.
 //
 // playerHitSfx plays a 2D one-shot ONLY when this projectile damages the local
 // player's car (tag "Player") - i.e. an incoming enemy hit, from the player's
 // POV. The clip set is a per-projectile field on purpose: the bullet uses
-// metal-on-metal, a future rocket/laser prefab sets its own clips. Clips
-// round-robin (2-3 near identical takes) with a little pitch jitter; auto-load
-// from Resources/Audio/BulletImpact if the array is left empty. Loudness is the
+// metal-on-metal, Rocket.cs's impact is its own thing. Clips round-robin (2-3
+// near identical takes) with a little pitch jitter; auto-load from
+// Resources/Audio/BulletImpact if the array is left empty. Loudness is the
 // player setting GameSettings.BulletHitVolume (0 = off), not a field here.
 public class Projectile : MonoBehaviour
 {
@@ -48,9 +50,9 @@ public class Projectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponentInParent<Projectile>() != null)
+        if (other.GetComponentInParent<Projectile>() != null || other.GetComponentInParent<Rocket>() != null)
         {
-            return; // bullets pass through each other
+            return; // bullets pass through other bullets and rockets
         }
 
         TeamMember hitTeam = other.GetComponentInParent<TeamMember>();
